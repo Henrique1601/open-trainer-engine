@@ -4,6 +4,7 @@ import { MemoryReaderWriter } from '../memory/memory-reader-writer.js';
 import { PointerResolver } from '../memory/pointer-resolver.js';
 import { AOBScanner } from '../memory/aob-scanner.js';
 import { CodeCaveInjector } from '../memory/code-cave-injector.js';
+import { AntiCheatDetector } from '../security/anti-cheat-detector.js';
 import { TrainerContract, CheatDefinition, TrainerLaunchState } from './trainer-contract.js';
 
 interface ActiveAobPatch {
@@ -69,6 +70,20 @@ export class TrainerSession extends EventEmitter {
       // Validação do contrato em memória
       this.transition(TrainerLaunchState.EnsuringBinaryAccess);
       this.transition(TrainerLaunchState.CheckingInternalBinaries);
+
+      // Validação de Segurança Contra Anti-Cheats Ativos (Safe Guard)
+      try {
+        const running = ProcessManager.listProcesses().map(p => p.name);
+        const check = AntiCheatDetector.isSafeToInject(this.contract.processName, running);
+        if (!check.safe) {
+          throw new Error(check.reason || 'Injeção bloqueada por detecção de software anti-cheat ativo.');
+        }
+      } catch (secErr: any) {
+        if (secErr.message && secErr.message.includes('bloqueada')) {
+          throw secErr;
+        }
+        // Se a listagem falhar, segue com precaução
+      }
 
       // Localiza o processo do jogo
       this.transition(TrainerLaunchState.FindingProcess);

@@ -425,6 +425,81 @@
       border-radius: 14px;
       padding: 24px;
     }
+
+    /* Speedhack & Audio Styles */
+    .speed-preset-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .speed-preset-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--accent);
+    }
+    .speed-preset-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    .safe-guard-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(63, 185, 80, 0.15);
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.35);
+    }
+    .remote-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      gap: 32px;
+      align-items: center;
+      max-width: 720px;
+    }
+    .qr-container {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 12px;
+      display: inline-block;
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
+    }
+    .qr-container img {
+      display: block;
+      width: 180px;
+      height: 180px;
+      border-radius: 8px;
+    }
+    .hex-dump-table {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      width: 100%;
+      border-collapse: collapse;
+      background: #020408;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .hex-dump-table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .hex-addr { color: #818cf8; font-weight: 600; }
+    .hex-bytes { color: #38bdf8; word-spacing: 4px; }
+    .hex-ascii { color: #3fb950; }
   </style>
 </head>
 <body>
@@ -441,7 +516,7 @@
       <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
       <div class="brand-text">
         <h1>Open Trainer</h1>
-        <span>Engine v0.1.0</span>
+        <span>Engine v0.2.0</span>
       </div>
     </div>
 
@@ -465,10 +540,16 @@
       <div class="nav-item" onclick="switchTab('tab-captures', this)">
         <span>🎬</span> Destaques / Gravações
       </div>
+      <div class="nav-item" onclick="switchTab('tab-remote', this)">
+        <span>📱</span> WeMod Remote (Celular)
+      </div>
     </div>
 
     <div class="nav-group">
       <div class="nav-label">Criação & Modding</div>
+      <div class="nav-item" onclick="switchTab('tab-cloud', this)">
+        <span>☁️</span> Catálogo na Nuvem
+      </div>
       <div class="nav-item" onclick="switchTab('tab-studio', this)">
         <span>🧪</span> Cheat Maker Studio
       </div>
@@ -561,12 +642,36 @@
             <button class="fav-btn" id="detail-fav-btn" onclick="toggleCurrentFavorite()">⭐</button>
           </div>
           <p id="detail-process" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Alvo: Game.exe</p>
-          <div class="playtime-badge">
-            <span>⏱️</span>
-            <span id="detail-playtime">Tempo com mods: 0h 0m</span>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+            <div class="playtime-badge">
+              <span>⏱️</span>
+              <span id="detail-playtime">Tempo com mods: 0h 0m</span>
+            </div>
+            <div class="safe-guard-badge" id="anti-cheat-status-badge">
+              <span>🛡️</span> Safe Guard: Protegido
+            </div>
           </div>
         </div>
         <button class="play-btn" id="detail-play-btn" onclick="toggleAttach()">JOGAR COM TRAINER</button>
+      </div>
+
+      <!-- Painel Speedhack Nativo WeMod Style -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div>
+          <div style="font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <span>⚡</span>
+            <span>Speedhack Nativo (Controle de Tempo)</span>
+            <span id="speedhack-val-badge" style="background: rgba(56, 189, 248, 0.2); color: var(--accent); padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">1.0x (Normal)</span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">Acelere o jogo para pular esperas ou desacelere em Bullet-Time para combates difíceis.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="speed-preset-btn" onclick="setSpeedhack(0.2, this)">0.2x</button>
+          <button class="speed-preset-btn" onclick="setSpeedhack(0.5, this)">0.5x</button>
+          <button class="speed-preset-btn active" id="btn-speed-1" onclick="setSpeedhack(1.0, this)">1.0x</button>
+          <button class="speed-preset-btn" onclick="setSpeedhack(2.0, this)">2.0x</button>
+          <button class="speed-preset-btn" onclick="setSpeedhack(5.0, this)">5.0x</button>
+        </div>
       </div>
 
       <div class="section-title">Cheats e Modificações (<span id="detail-cheat-count">0</span>)</div>
@@ -594,6 +699,50 @@
       </div>
     </div>
 
+    <!-- Tab WeMod Remote (Celular) -->
+    <div class="view-content" id="tab-remote">
+      <div class="section-title">📱 WeMod Remote (Controle por Celular)</div>
+      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">
+        Controle cheats e mods diretamente pelo seu smartphone sem precisar dar Alt+Tab nem memorizar atalhos.
+      </p>
+
+      <div class="remote-card">
+        <div class="qr-container">
+          <img id="remote-qr-img" src="" alt="QR Code WeMod Remote" />
+        </div>
+        <div>
+          <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 8px;">Conecte seu Celular</h3>
+          <p style="color: var(--text-muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 16px;">
+            1. Certifique-se de que o celular está conectado na mesma rede Wi-Fi deste computador.<br/>
+            2. Aponte a câmera do smartphone para o QR Code ao lado.<br/>
+            3. Ou acesse no navegador do celular o endereço direto:
+          </p>
+          <div style="background: rgba(0,0,0,0.4); padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); font-family: monospace; font-size: 14px; color: var(--accent); display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <span id="remote-url-text">http://carregando...</span>
+            <button style="background: none; border: none; color: #fff; cursor: pointer;" onclick="copyRemoteUrl()">📋 Copiar</button>
+          </div>
+          <button class="play-btn" style="padding: 10px 20px; font-size: 13px;" onclick="openRemoteInBrowser()">Abrir no Navegador do PC</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Catálogo na Nuvem (Cloud Trainers Hub) -->
+    <div class="view-content" id="tab-cloud">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>☁️ Catálogo de Trainers na Nuvem</span>
+        <button class="speed-preset-btn" onclick="fetchCloudTrainers()">↻ Atualizar Catálogo</button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+        Explore a biblioteca de trainers comunitários hospedados na nuvem e baixe com 1 clique sem precisar atualizar o app.
+      </p>
+      <div style="margin-bottom: 20px;">
+        <input type="text" id="cloud-search-input" placeholder="🔍 Buscar jogos ou trainers na nuvem (ex: Elden Ring, Cyberpunk)..." oninput="filterCloudTrainers(this.value)" style="width: 100%; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); color: #fff; border-radius: 10px; font-size: 14px;" />
+      </div>
+      <div class="maps-grid" id="cloud-trainers-container">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
     <!-- Tab 7: Studio (Scanner de Memória) -->
     <div class="view-content" id="tab-studio">
       <div class="section-title">🧪 Cheat Maker Studio</div>
@@ -604,6 +753,21 @@
         <div style="display: flex; gap: 10px; margin-bottom: 16px;">
           <input type="number" id="studio-val" placeholder="Digite o valor (ex: 100 de Vida)..." style="flex: 1; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); color: #fff; border-radius: 8px;" />
           <button class="play-btn" style="padding: 12px 24px;" onclick="alert('Iniciando First Scan no processo do jogo...')">Primeiro Scan</button>
+        </div>
+
+        <!-- Hex Memory Viewer -->
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span>🔬 Inspetor Hexadecimal & Mini-Desassemblador</span>
+            <button class="speed-preset-btn" onclick="loadSampleHexDump()">Carregar Amostra de Memória</button>
+          </div>
+          <div style="overflow-x: auto; max-height: 240px; border-radius: 8px; border: 1px solid var(--border);">
+            <table class="hex-dump-table" id="studio-hex-table">
+              <tbody>
+                <!-- Injetado via JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -663,6 +827,8 @@
       if (tabId === 'tab-favorites') renderFavorites();
       if (tabId === 'tab-maps') renderMaps();
       if (tabId === 'tab-captures') renderCaptures();
+      if (tabId === 'tab-remote') loadRemoteInfo();
+      if (tabId === 'tab-cloud') fetchCloudTrainers();
     }
 
     async function init() {
@@ -789,6 +955,25 @@
       const data = await ipcRenderer.invoke('get-game-stats', t.id);
       document.getElementById('detail-playtime').innerText = `Tempo com mods: ${data.formattedPlaytime}`;
       document.getElementById('detail-fav-btn').className = `fav-btn ${data.isFavorite ? 'active' : ''}`;
+
+      // Checagem de Segurança Anti-Cheat Safe Guard
+      try {
+        const ac = await ipcRenderer.invoke('security:check-anti-cheat');
+        const badge = document.getElementById('anti-cheat-status-badge');
+        if (badge) {
+          if (ac.detected) {
+            badge.style.background = 'rgba(248, 81, 73, 0.2)';
+            badge.style.color = '#f85149';
+            badge.style.borderColor = '#f85149';
+            badge.innerHTML = `<span>⚠️</span> Anti-Cheat Detectado: ${ac.matches.map(m => m.antiCheat.name).join(', ')}`;
+          } else {
+            badge.style.background = 'rgba(63, 185, 80, 0.15)';
+            badge.style.color = '#3fb950';
+            badge.style.borderColor = 'rgba(63, 185, 80, 0.35)';
+            badge.innerHTML = `<span>🛡️</span> Safe Guard: Protegido`;
+          }
+        }
+      } catch {}
 
       let cheatsHtml = '';
       for (const c of t.cheats) {
@@ -925,6 +1110,128 @@
         document.getElementById('detail-playtime').innerText = `Tempo com mods: ${data.formatted}`;
       }
     });
+
+    // ==============================================================================
+    // Speedhack Nativo
+    // ==============================================================================
+    async function setSpeedhack(multiplier, btn) {
+      document.querySelectorAll('.speed-preset-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const state = await ipcRenderer.invoke('speedhack:set', multiplier);
+      const badge = document.getElementById('speedhack-val-badge');
+      if (badge) {
+        badge.innerText = `${multiplier.toFixed(1)}x ${multiplier === 1.0 ? '(Normal)' : multiplier < 1.0 ? '(Bullet-Time)' : '(Turbo)'}`;
+      }
+      playBeep(multiplier > 1.0 ? 950 : 500, 0.08);
+    }
+
+    // ==============================================================================
+    // WeMod Remote (Celular via QR Code)
+    // ==============================================================================
+    let currentRemoteUrl = '';
+    async function loadRemoteInfo() {
+      try {
+        const info = await ipcRenderer.invoke('remote:get-info');
+        currentRemoteUrl = info.url;
+        document.getElementById('remote-qr-img').src = info.qrCode;
+        document.getElementById('remote-url-text').innerText = info.url;
+      } catch (err) {
+        console.warn('Erro ao carregar remote info:', err);
+      }
+    }
+
+    function copyRemoteUrl() {
+      if (currentRemoteUrl) {
+        navigator.clipboard.writeText(currentRemoteUrl);
+        alert('Endereço do WeMod Remote copiado: ' + currentRemoteUrl);
+      }
+    }
+
+    function openRemoteInBrowser() {
+      if (currentRemoteUrl) {
+        ipcRenderer.invoke('open-external-url', currentRemoteUrl);
+      }
+    }
+
+    // ==============================================================================
+    // Catálogo de Trainers na Nuvem (Cloud Trainers Hub)
+    // ==============================================================================
+    let cloudCatalog = [];
+    async function fetchCloudTrainers() {
+      const container = document.getElementById('cloud-trainers-container');
+      container.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">Carregando catálogo na nuvem...</div>';
+      try {
+        const cat = await ipcRenderer.invoke('cloud:fetch-catalog');
+        cloudCatalog = cat.trainers || [];
+        renderCloudCatalog(cloudCatalog);
+      } catch (e) {
+        container.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">Não foi possível carregar o catálogo remoto no momento.</div>';
+      }
+    }
+
+    function filterCloudTrainers(query) {
+      const q = (query || '').toLowerCase().trim();
+      if (!q) {
+        renderCloudCatalog(cloudCatalog);
+        return;
+      }
+      const filtered = cloudCatalog.filter(t => t.gameTitle.toLowerCase().includes(q) || t.processName.toLowerCase().includes(q));
+      renderCloudCatalog(filtered);
+    }
+
+    function renderCloudCatalog(list) {
+      const container = document.getElementById('cloud-trainers-container');
+      if (list.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">Nenhum trainer encontrado na nuvem para esta busca.</div>';
+        return;
+      }
+      container.innerHTML = list.map(t => `
+        <div class="map-card">
+          <div class="map-img" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80');"></div>
+          <div class="map-info">
+            <div class="map-title">${t.gameTitle}</div>
+            <div class="map-desc">${t.description || 'Trainer completo com suporte da comunidade.'}</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Por ${t.author} • v${t.version} • ${t.cheatCount} Cheats</div>
+            <button class="play-btn" style="padding: 8px 18px; font-size: 12px; width: 100%;" onclick="installCloudTrainer('${t.gameId}')">Baixar Trainer ☁️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function installCloudTrainer(gameId) {
+      const entry = cloudCatalog.find(t => t.gameId === gameId);
+      if (!entry) return;
+      alert(`Baixando trainer de ${entry.gameTitle}...`);
+      try {
+        await ipcRenderer.invoke('cloud:install-trainer', entry);
+        alert(`Trainer de ${entry.gameTitle} instalado com sucesso!`);
+        allTrainers = await ipcRenderer.invoke('list-trainers');
+        renderCarousels();
+      } catch (e) {
+        alert('Erro ao instalar trainer: ' + e.message);
+      }
+    }
+
+    // ==============================================================================
+    // Hex Memory Viewer & Disassembler Sample
+    // ==============================================================================
+    async function loadSampleHexDump() {
+      const sampleHex = '4883EC28488B052B3501004885C07412488B084885C9740A488B01FF50209090C3';
+      const res = await ipcRenderer.invoke('studio:hex-dump', sampleHex, '0x140050A10');
+      const tbody = document.querySelector('#studio-hex-table tbody');
+      if (!tbody) return;
+      tbody.innerHTML = res.dump.map((r, i) => {
+        const dis = res.disasm[i] ? `[${res.disasm[i].mnemonic}]` : '';
+        return `
+          <tr>
+            <td class="hex-addr">0x${r.addressHex}</td>
+            <td class="hex-bytes">${r.bytesHex.join(' ')}</td>
+            <td class="hex-ascii">${r.ascii}</td>
+            <td style="color: #c084fc; font-size: 11px;">${dis}</td>
+          </tr>
+        `;
+      }).join('');
+    }
 
     init();
   </script>

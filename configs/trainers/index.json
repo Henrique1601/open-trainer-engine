@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-10-26T20:00:00Z",
+  "trainers": [
+    {
+      "gameId": "sample-rpg-game",
+      "gameTitle": "Chronicles of Aethelgard (Sample RPG)",
+      "processName": "Aethelgard.exe",
+      "version": "1.0.0",
+      "author": "Open Trainer Engine Team",
+      "downloadUrl": "https://raw.githubusercontent.com/Henrique1601/open-trainer-engine/main/configs/trainers/sample-rpg-game.json",
+      "description": "Trainer padrão com Modo Deus, Ouro Infinito, Munição Ilimitada e Super Pulo.",
+      "cheatCount": 4
+    },
+    {
+      "gameId": "elden-ring",
+      "gameTitle": "Elden Ring: Shadow of the Erdtree",
+      "processName": "eldenring.exe",
+      "version": "1.14.0",
+      "author": "Community Contributors",
+      "downloadUrl": "https://raw.githubusercontent.com/Henrique1601/open-trainer-engine/main/configs/trainers/sample-rpg-game.json",
+      "description": "Vida infinita, Estamina ilimitada, 100% Taxa de Drop e Runas infinitas.",
+      "cheatCount": 16
+    },
+    {
+      "gameId": "cyberpunk-2077",
+      "gameTitle": "Cyberpunk 2077: Phantom Liberty",
+      "processName": "Cyberpunk2077.exe",
+      "version": "2.13.0",
+      "author": "Community Contributors",
+      "downloadUrl": "https://raw.githubusercontent.com/Henrique1601/open-trainer-engine/main/configs/trainers/sample-rpg-game.json",
+      "description": "Créditos infinitos, munição sem recarga, sem recuo de mira e invisibilidade.",
+      "cheatCount": 14
+    }
+  ]
+}

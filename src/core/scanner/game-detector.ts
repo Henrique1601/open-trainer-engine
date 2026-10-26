@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SteamScanner } from './steam-scanner.js';
 import { EpicScanner } from './epic-scanner.js';
+import { GogScanner } from './gog-scanner.js';
+import { XboxScanner } from './xbox-scanner.js';
 
 export type GamePlatform = 'steam' | 'epic' | 'gog' | 'xbox' | 'standalone';
 
@@ -95,6 +97,32 @@ export class GameDetector {
       }
     } catch (err) {
       console.warn('Erro ao varrer Epic Games:', err);
+    }
+
+    // 3. GOG Galaxy
+    try {
+      const gogGames = GogScanner.scanInstalledGames();
+      for (const gg of gogGames) {
+        if (!gg.executableName) {
+          gg.executableName = GameDetector.findPrimaryExecutable(gg.installPath);
+        }
+        detected.push(gg);
+      }
+    } catch (err) {
+      console.warn('Erro ao varrer GOG Galaxy:', err);
+    }
+
+    // 4. Xbox Game Pass PC / Microsoft Store
+    try {
+      const xboxGames = XboxScanner.scanInstalledGames();
+      for (const xg of xboxGames) {
+        if (!xg.executableName) {
+          xg.executableName = GameDetector.findPrimaryExecutable(xg.installPath);
+        }
+        detected.push(xg);
+      }
+    } catch (err) {
+      console.warn('Erro ao varrer Xbox Game Pass:', err);
     }
 
     return detected;
