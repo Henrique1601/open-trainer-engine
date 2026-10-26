@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, globalShortcut, shell } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { GameDetector } from '../core/scanner/game-detector.js';
 import { ProcessManager } from '../core/memory/process-manager.js';
@@ -20,7 +21,24 @@ let activeSession: TrainerSession | null = null;
 let activeSessionTimer: NodeJS.Timeout | null = null;
 let activeGameId: string | null = null;
 
+function getAppIconPath(): string {
+  const possiblePaths = [
+    path.join(__dirname, '../../assets/icon.png'),
+    path.join(__dirname, '../assets/icon.png'),
+    path.join(__dirname, '../../build/icon.ico'),
+    path.join(app.getAppPath(), 'assets', 'icon.png'),
+    path.join(app.getAppPath(), 'build', 'icon.ico')
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+  return '';
+}
+
 function createMainWindow() {
+  const iconPath = getAppIconPath();
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -29,6 +47,7 @@ function createMainWindow() {
     backgroundColor: '#0a0d14',
     title: 'Open Trainer Engine',
     frame: true,
+    ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false

@@ -26,7 +26,7 @@
     "url": "https://github.com/Henrique1601/open-trainer-engine.git"
   },
   "scripts": {
-    "build": "tsc && node -e \"const fs = require('fs'); fs.mkdirSync('dist/desktop/ui', {recursive:true}); fs.copyFileSync('src/desktop/ui/index.html', 'dist/desktop/ui/index.html'); fs.copyFileSync('src/desktop/ui/overlay.html', 'dist/desktop/ui/overlay.html');\"",
+    "build": "tsc && node -e \"const fs = require('fs'); fs.mkdirSync('dist/desktop/ui', {recursive:true}); fs.copyFileSync('src/desktop/ui/index.html', 'dist/desktop/ui/index.html'); fs.copyFileSync('src/desktop/ui/overlay.html', 'dist/desktop/ui/overlay.html'); fs.cpSync('assets', 'dist/assets', {recursive:true});\"",
     "app": "npm run build && electron dist/desktop/main.js",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder --win portable",
@@ -47,6 +47,8 @@
     "files": [
       "dist/**/*",
       "configs/**/*",
+      "assets/**/*",
+      "build/**/*",
       "package.json"
     ],
     "asar": true,
@@ -54,6 +56,7 @@
       "**/node_modules/koffi/**/*"
     ],
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         "nsis",
         "portable"
@@ -64,7 +67,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Open Trainer Engine"
+      "shortcutName": "Open Trainer Engine",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
     }
   },
   "dependencies": {

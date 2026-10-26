@@ -75,6 +75,19 @@
       gap: 12px;
       border-bottom: 1px solid var(--border);
     }
+    .brand-logo-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      object-fit: cover;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    }
+    .brand-logo-img:hover {
+      transform: scale(1.08) rotate(2deg);
+      box-shadow: 0 0 24px rgba(129, 140, 248, 0.6);
+    }
     .brand-icon {
       font-size: 26px;
       background: linear-gradient(135deg, #1f6feb 0%, #8957e5 100%);
@@ -425,7 +438,7 @@
   <!-- Sidebar -->
   <aside>
     <div class="brand">
-      <div class="brand-icon">🧙‍♂️</div>
+      <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
       <div class="brand-text">
         <h1>Open Trainer</h1>
         <span>Engine v0.1.0</span>

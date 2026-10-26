@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Gradiente de Fundo -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+
+    <!-- Gradiente Neon Principal (Cyan para Roxo Elétrico) -->
+    <linearGradient id="wandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="40%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+
+    <!-- Gradiente de Brilho da Joia / Núcleo -->
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="1"/>
+      <stop offset="50%" stop-color="#818cf8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#c084fc" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Filtro de Glow / Brilho Neon -->
+    <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="subtleShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Container com cantos arredondados (Squircle) -->
+  <rect x="24" y="24" width="464" height="464" rx="100" fill="url(#bgGrad)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="4" filter="url(#subtleShadow)"/>
+
+  <!-- Malha Hexagonal Sutil de Fundo -->
+  <g stroke="rgba(255, 255, 255, 0.04)" stroke-width="2" fill="none">
+    <polygon points="256,120 316,155 316,225 256,260 196,225 196,155"/>
+    <polygon points="256,260 316,295 316,365 256,400 196,365 196,295"/>
+    <polygon points="136,190 196,225 196,295 136,330 76,295 76,225"/>
+    <polygon points="376,190 436,225 436,295 376,330 316,295 316,225"/>
+  </g>
+
+  <!-- Brilho Atmosférico Central -->
+  <circle cx="256" cy="230" r="160" fill="url(#coreGlow)" opacity="0.35"/>
+
+  <!-- Varinha Mágica Cibernética (Wand / Sword of Power) -->
+  <g filter="url(#neonGlow)">
+    <!-- Haste da Varinha com perspectiva angular -->
+    <path d="M 170 370 L 290 250 L 310 270 L 190 390 Z" fill="url(#wandGrad)"/>
+    <path d="M 155 385 L 180 360 L 200 380 L 175 405 Z" fill="#6366f1"/>
+    
+    <!-- Lâmina / Raio de Energia Mágico Superior -->
+    <polygon points="256,90 286,210 256,245 226,210" fill="url(#wandGrad)"/>
+    
+    <!-- Anéis Orbitais de Potência (Mods / Hacks) -->
+    <ellipse cx="256" cy="220" rx="90" ry="26" fill="none" stroke="#38bdf8" stroke-width="6" transform="rotate(-30 256 220)"/>
+    <ellipse cx="256" cy="220" rx="90" ry="26" fill="none" stroke="#c084fc" stroke-width="4" stroke-dasharray="16 12" transform="rotate(35 256 220)"/>
+
+    <!-- Cristais Flutuantes de Alta Precisão (Nódulos de Memória) -->
+    <polygon points="256,60 268,85 256,110 244,85" fill="#38bdf8"/>
+    <polygon points="350,150 365,170 350,190 335,170" fill="#818cf8"/>
+    <polygon points="162,150 177,170 162,190 147,170" fill="#c084fc"/>
+    <polygon points="330,290 345,310 330,330 315,310" fill="#38bdf8"/>
+    <polygon points="182,290 197,310 182,330 167,310" fill="#818cf8"/>
+
+    <!-- Estrela Cintilante Central (Poder Máximo) -->
+    <circle cx="256" cy="220" r="14" fill="#ffffff"/>
+  </g>
+</svg>
