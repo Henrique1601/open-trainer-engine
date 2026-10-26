@@ -2,6 +2,12 @@
   "name": "open-trainer-engine",
   "version": "0.1.0",
   "description": "Next-generation single-player game trainer engine, community mod hub, and in-game HUD overlay system.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "open-trainer": "dist/cli/index.js"
+  },
   "keywords": [
     "game-trainer",
     "reverse-engineering",
@@ -20,7 +26,21 @@
     "url": "https://github.com/Henrique1601/open-trainer-engine.git"
   },
   "scripts": {
-    "lint": "echo \"Linting docs and schemas...\"",
+    "build": "tsc",
+    "cli": "tsx src/cli/index.ts",
+    "scan": "tsx src/cli/index.ts scan",
+    "trainers": "tsx src/cli/index.ts trainers",
+    "processes": "tsx src/cli/index.ts processes",
+    "test": "vitest run",
     "validate:schema": "node -e \"console.log('Schema validation OK')\""
+  },
+  "dependencies": {
+    "koffi": "^3.3.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
   }
 }
