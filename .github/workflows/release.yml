@@ -1,9 +1,10 @@
-name: Release Build
+name: Release Build & Publish
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,19 +21,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: 'npm'
 
       - name: Install Dependencies
-        run: |
-          npm install --no-audit
+        run: npm ci
 
-      - name: Build Application Packages
-        run: |
-          npm run validate:schema
+      - name: Run Automated Tests
+        run: npm test
 
-      - name: Create GitHub Release
+      - name: Build Application & Executables
+        run: |
+          npm run dist:installer
+          npm run dist
+
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          files: |
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml
           generate_release_notes: true
           draft: false
           prerelease: false
