@@ -5,354 +5,603 @@
   <title>Open Trainer Engine</title>
   <style>
     :root {
-      --bg-main: #0d1117;
-      --bg-sidebar: #161b22;
-      --bg-card: #21262d;
+      --bg-dark: #080a0f;
+      --bg-sidebar: #0f131a;
+      --bg-card: #161c26;
+      --bg-card-hover: #1e2634;
       --bg-input: #0b0e14;
-      --border-color: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.08);
       --accent: #58a6ff;
-      --accent-green: #238636;
-      --accent-green-glow: #2ea043;
-      --text-main: #f0f6fc;
+      --accent-glow: rgba(88, 166, 255, 0.35);
+      --green: #238636;
+      --green-glow: #2ea043;
+      --gold: #f59e0b;
+      --text: #f0f6fc;
       --text-muted: #8b949e;
-      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      background: var(--bg-main);
-      color: var(--text-main);
-      font-family: var(--font-family);
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: var(--font);
       height: 100vh;
       display: flex;
       user-select: none;
       overflow: hidden;
     }
+
+    /* Update Notification Banner */
+    #update-banner {
+      display: none;
+      background: linear-gradient(90deg, #1f6feb 0%, #238636 100%);
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      justify-content: space-between;
+      align-items: center;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    #update-banner button {
+      background: rgba(255, 255, 255, 0.25);
+      border: none;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     /* Sidebar */
     aside {
-      width: 280px;
+      width: 270px;
       background: var(--bg-sidebar);
-      border-right: 1px solid var(--border-color);
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
+      z-index: 10;
     }
-    .logo-container {
+
+    .brand {
       padding: 20px;
       display: flex;
       align-items: center;
       gap: 12px;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border);
     }
-    .logo-icon {
-      font-size: 24px;
-      background: rgba(88, 166, 255, 0.15);
-      border-radius: 8px;
+    .brand-icon {
+      font-size: 26px;
+      background: linear-gradient(135deg, #1f6feb 0%, #8957e5 100%);
+      border-radius: 10px;
       padding: 6px;
+      box-shadow: 0 0 16px rgba(31, 111, 235, 0.4);
     }
-    .logo-title h1 { font-size: 16px; font-weight: 700; color: #fff; }
-    .logo-title span { font-size: 11px; color: var(--accent); font-weight: 600; }
-    .nav-tabs {
-      display: flex;
-      padding: 10px 14px;
-      gap: 6px;
-      border-bottom: 1px solid var(--border-color);
+    .brand-text h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+    .brand-text span { font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+
+    /* Navigation Links */
+    .nav-group {
+      padding: 16px 10px 8px;
     }
-    .tab-btn {
-      flex: 1;
-      background: transparent;
-      border: 1px solid transparent;
+    .nav-label {
+      font-size: 11px;
+      text-transform: uppercase;
       color: var(--text-muted);
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
+      font-weight: 700;
+      padding: 0 12px 8px;
+      letter-spacing: 0.5px;
     }
-    .tab-btn.active {
-      background: var(--bg-card);
-      color: var(--text-main);
-      border-color: var(--border-color);
-    }
-    .games-header {
-      padding: 14px 16px 8px;
+    .nav-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-    }
-    .games-header span { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-    .scan-btn {
-      background: transparent;
-      border: none;
-      color: var(--accent);
-      font-size: 12px;
-      cursor: pointer;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 13.5px;
       font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 2px;
+      transition: all 0.15s ease;
     }
-    .games-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
     }
-    .game-item {
+    .nav-item.active {
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+    }
+    .nav-badge {
+      margin-left: auto;
+      font-size: 11px;
+      background: var(--bg-card);
+      color: var(--text-muted);
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    /* Active Game Mini Footer */
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      background: rgba(0,0,0,0.25);
+      border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 4px;
-      transition: all 0.15s;
     }
-    .game-item:hover { background: rgba(255, 255, 255, 0.04); }
-    .game-item.active { background: rgba(88, 166, 255, 0.15); color: #fff; }
-    .game-badge {
-      font-size: 9px;
-      padding: 2px 5px;
-      border-radius: 4px;
-      background: #21262d;
-      color: #8b949e;
-      text-transform: uppercase;
-      font-weight: 700;
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-muted);
     }
-    /* Main Content */
+    .status-indicator.online {
+      background: #3fb950;
+      box-shadow: 0 0 10px #2ea043;
+    }
+
+    /* Main Container */
     main {
       flex: 1;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
+      background: radial-gradient(circle at 80% 20%, rgba(31, 111, 235, 0.08) 0%, transparent 60%), var(--bg-dark);
     }
-    .view-container { display: none; padding: 32px; flex: 1; }
-    .view-container.active { display: flex; flex-direction: column; }
-    /* Hero Banner */
-    .hero-banner {
-      background: linear-gradient(135deg, rgba(88, 166, 255, 0.1) 0%, rgba(35, 134, 54, 0.1) 100%), var(--bg-sidebar);
-      border: 1px solid var(--border-color);
+
+    .view-content {
+      display: none;
+      padding: 28px 36px 60px;
+      flex: 1;
+    }
+    .view-content.active { display: flex; flex-direction: column; }
+
+    /* Hero Banner Carousel */
+    .hero-carousel {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+      height: 280px;
+      background: #10141d;
+    }
+    .carousel-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      display: flex;
+      align-items: flex-end;
+      padding: 36px;
+      background-size: cover;
+      background-position: center;
+    }
+    .carousel-slide.active { opacity: 1; z-index: 1; }
+    .slide-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(8,10,15,0.2) 0%, rgba(8,10,15,0.92) 85%);
+    }
+    .slide-content {
+      position: relative;
+      z-index: 2;
+      max-width: 600px;
+    }
+    .slide-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(88, 166, 255, 0.2);
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .slide-content h2 { font-size: 32px; font-weight: 800; margin-bottom: 8px; line-height: 1.1; }
+    .slide-content p { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
+
+    /* Carousel Nav Buttons */
+    .carousel-nav {
+      position: absolute;
+      bottom: 20px;
+      right: 28px;
+      z-index: 5;
+      display: flex;
+      gap: 8px;
+    }
+    .carousel-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+    .carousel-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* Section Header */
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Horizontal Card Carousel */
+    .cards-row {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 36px;
+      scrollbar-width: thin;
+    }
+    .cards-row::-webkit-scrollbar { height: 6px; }
+    .cards-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .game-card {
+      min-width: 210px;
+      max-width: 210px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 28px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .game-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      border-color: rgba(88, 166, 255, 0.4);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+    }
+    .card-thumb {
+      height: 120px;
+      background: #1a2230;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+    .fav-btn {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: rgba(0,0,0,0.6);
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .fav-btn.active { color: var(--gold); }
+    .card-body { padding: 12px 14px; }
+    .card-title { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+    .card-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+
+    /* Cheats Details View */
+    .game-hero {
+      background: linear-gradient(135deg, rgba(88, 166, 255, 0.12) 0%, rgba(35, 134, 54, 0.12) 100%), var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 24px;
     }
-    .hero-info h2 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
-    .hero-info p { font-size: 13px; color: var(--text-muted); }
+    .game-hero-title { display: flex; align-items: center; gap: 14px; }
+    .playtime-badge {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
     .play-btn {
-      background: var(--accent-green);
+      background: var(--green);
       color: #fff;
       border: none;
-      padding: 14px 32px;
-      border-radius: 8px;
+      padding: 14px 34px;
+      border-radius: 10px;
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 4px 20px rgba(35, 134, 54, 0.45);
       transition: all 0.2s;
-      box-shadow: 0 4px 16px rgba(35, 134, 54, 0.4);
     }
-    .play-btn:hover { background: var(--accent-green-glow); transform: translateY(-1px); }
-    .play-btn.active { background: #da3633; box-shadow: 0 4px 16px rgba(218, 54, 51, 0.4); }
-    /* Cheats Section */
-    .cheats-section h3 { font-size: 15px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; font-weight: 700; }
+    .play-btn:hover { background: var(--green-glow); transform: translateY(-2px); }
+    .play-btn.active { background: #da3633; box-shadow: 0 4px 20px rgba(218, 54, 51, 0.5); }
+
+    /* Cheats List */
     .cheat-row {
       background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 14px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 22px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       transition: all 0.2s;
     }
     .cheat-row:hover { border-color: rgba(88, 166, 255, 0.3); }
-    .cheat-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-    .cheat-sub { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .cheat-name { font-size: 14.5px; font-weight: 600; margin-bottom: 4px; }
+    .cheat-tags { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
     .hotkey-badge {
-      background: #0d1117;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: var(--bg-dark);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--accent);
+      font-family: monospace;
       padding: 2px 8px;
       border-radius: 4px;
-      font-family: monospace;
-      color: var(--accent);
       font-weight: 700;
+      font-size: 11.5px;
     }
+
     /* Switch */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 48px;
-      height: 26px;
-    }
+    .switch { position: relative; width: 50px; height: 28px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
+      position: absolute; cursor: pointer; inset: 0;
       background-color: #30363d;
-      transition: .3s;
-      border-radius: 26px;
+      transition: .25s; border-radius: 28px;
     }
     .slider:before {
-      position: absolute;
-      content: "";
-      height: 20px;
-      width: 20px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .3s;
-      border-radius: 50%;
+      position: absolute; content: "";
+      height: 22px; width: 22px; left: 3px; bottom: 3px;
+      background-color: white; transition: .25s; border-radius: 50%;
     }
-    input:checked + .slider { background-color: var(--accent-green); }
+    input:checked + .slider { background-color: var(--green); box-shadow: 0 0 12px rgba(46, 160, 67, 0.5); }
     input:checked + .slider:before { transform: translateX(22px); }
-    /* Studio / Scanner UI */
-    .studio-panel {
-      background: var(--bg-sidebar);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 24px;
+
+    /* Maps Grid */
+    .maps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
     }
-    .input-group {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .input-field {
-      background: var(--bg-input);
-      border: 1px solid var(--border-color);
-      padding: 10px 14px;
-      border-radius: 6px;
-      color: #fff;
-      font-size: 14px;
-      flex: 1;
-    }
-    .action-btn {
-      background: var(--accent);
-      color: #0d1117;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    /* Dropzone */
-    .dropzone {
-      border: 2px dashed rgba(88, 166, 255, 0.4);
-      border-radius: 12px;
-      padding: 60px 20px;
-      text-align: center;
-      background: rgba(88, 166, 255, 0.03);
+    .map-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .dropzone:hover {
-      background: rgba(88, 166, 255, 0.08);
-      border-color: var(--accent);
+    .map-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+    .map-img { height: 160px; background-size: cover; background-position: center; }
+    .map-info { padding: 18px; }
+    .map-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .map-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px; }
+
+    /* Studio & Importer */
+    .panel-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
     }
   </style>
 </head>
 <body>
+
+  <!-- Notificação Flutuante de Nova Versão (Auto-Update) -->
+  <div id="update-banner">
+    <span id="update-text">🚀 Nova versão disponível!</span>
+    <button onclick="downloadLatestUpdate()">Atualizar Agora</button>
+  </div>
+
   <!-- Sidebar -->
   <aside>
-    <div class="logo-container">
-      <div class="logo-icon">🧙‍♂️</div>
-      <div class="logo-title">
+    <div class="brand">
+      <div class="brand-icon">🧙‍♂️</div>
+      <div class="brand-text">
         <h1>Open Trainer</h1>
-        <span>ENGINE v0.1.0</span>
+        <span>Engine v0.1.0</span>
       </div>
     </div>
 
-    <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchView('trainer-view', this)">Trainers</button>
-      <button class="tab-btn" onclick="switchView('studio-view', this)">Studio</button>
-      <button class="tab-btn" onclick="switchView('importer-view', this)">Importar .CT</button>
+    <!-- Navegação Estilo WeMod -->
+    <div class="nav-group">
+      <div class="nav-label">Geral</div>
+      <div class="nav-item active" onclick="switchTab('tab-home', this)">
+        <span>🏠</span> Início / Destaques
+      </div>
+      <div class="nav-item" onclick="switchTab('tab-favorites', this)">
+        <span>⭐</span> Favoritos
+        <span class="nav-badge" id="fav-count">0</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('tab-my-games', this)">
+        <span>🎮</span> Meus Jogos (Biblioteca)
+        <span class="nav-badge" id="games-count">0</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('tab-maps', this)">
+        <span>🗺️</span> Mapas ao Vivo
+      </div>
+      <div class="nav-item" onclick="switchTab('tab-captures', this)">
+        <span>🎬</span> Destaques / Gravações
+      </div>
     </div>
 
-    <div class="games-header">
-      <span>Seus Jogos</span>
-      <button class="scan-btn" onclick="scanLibraries()">↻ Atualizar</button>
+    <div class="nav-group">
+      <div class="nav-label">Criação & Modding</div>
+      <div class="nav-item" onclick="switchTab('tab-studio', this)">
+        <span>🧪</span> Cheat Maker Studio
+      </div>
+      <div class="nav-item" onclick="switchTab('tab-importer', this)">
+        <span>📥</span> Importar Tabela .CT
+      </div>
     </div>
 
-    <div class="games-list" id="games-list">
-      <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-        Varrendo bibliotecas...
+    <div class="sidebar-footer">
+      <div class="status-indicator online"></div>
+      <div style="font-size: 12px;">
+        <div style="font-weight: 700;" id="footer-status">Pronto</div>
+        <div style="color: var(--text-muted);" id="footer-details">HUD Overlay: Ctrl+G</div>
       </div>
     </div>
   </aside>
 
-  <!-- Main Content Area -->
+  <!-- Conteúdo Principal -->
   <main>
-    <!-- View 1: Trainers -->
-    <div class="view-container active" id="trainer-view">
-      <div class="hero-banner">
-        <div class="hero-info">
-          <h2 id="active-game-title">Sample RPG Adventure</h2>
-          <p id="active-game-meta">Alvo: SampleGame.exe • Plataforma: Steam/Epic</p>
-        </div>
-        <button class="play-btn" id="attach-btn" onclick="toggleAttach()">JOGAR COM TRAINER</button>
-      </div>
-
-      <div class="cheats-section">
-        <h3>Opções Disponíveis (<span id="cheats-count">4</span>)</h3>
-        <div id="cheats-list">
-          <!-- Lista de Cheats injetada via JS -->
-        </div>
-      </div>
-    </div>
-
-    <!-- View 2: Studio (Memory Scanner) -->
-    <div class="view-container" id="studio-view">
-      <div class="hero-banner">
-        <div class="hero-info">
-          <h2>Cheat Maker Studio</h2>
-          <p>Varra a memória do jogo para criar cheats do zero em jogos que não possuem trainer.</p>
-        </div>
-      </div>
-
-      <div class="studio-panel">
-        <div class="input-group">
-          <input type="number" class="input-field" id="scan-value" placeholder="Digite o valor exato (ex: 100 de Vida)..." />
-          <select class="input-field" id="scan-type" style="max-width: 140px;">
-            <option value="int32">4 Bytes (Int32)</option>
-            <option value="float">Float</option>
-            <option value="double">Double</option>
-            <option value="int64">8 Bytes (Int64)</option>
-          </select>
-          <button class="action-btn" onclick="executeFirstScan()">Primeiro Scan</button>
-          <button class="action-btn" style="background: var(--bg-card); color: #fff;" onclick="executeNextScan()">Próximo Scan</button>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span style="font-size: 13px; color: var(--text-muted);" id="scan-results-count">Resultados: 0</span>
-          <button class="action-btn" style="background: var(--accent-green); color: #fff; font-size: 12px; padding: 6px 14px;" onclick="exportDiscoveredCheat()">
-            + Salvar como Novo Cheat
-          </button>
-        </div>
-
-        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; height: 320px; overflow-y: auto; padding: 12px;" id="scan-results-list">
-          <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding-top: 130px;">
-            Inicie um escaneamento para listar endereços de memória.
+    <!-- Tab 1: Início / Carrosséis -->
+    <div class="view-content active" id="tab-home">
+      <!-- Carrossel de Banners Widescreen (WeMod Style) -->
+      <div class="hero-carousel">
+        <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80');">
+          <div class="slide-gradient"></div>
+          <div class="slide-content">
+            <span class="slide-tag">🔥 Mais Jogado da Semana</span>
+            <h2>Elden Ring: Shadow of the Erdtree</h2>
+            <p>Modo Deus, Runas Infinitas, 100% de Taxa de Drop e Estamina Ilimitada.</p>
+            <button class="play-btn" onclick="openGameById('sample-rpg-game')">JOGAR COM MODS</button>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- View 3: Importer .CT -->
-    <div class="view-container" id="importer-view">
-      <div class="hero-banner">
-        <div class="hero-info">
-          <h2>Importador de Tabelas Cheat Engine (.CT)</h2>
-          <p>Arraste tabelas .CT da comunidade para converter instantaneamente em trainers nativos.</p>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&auto=format&fit=crop&q=80');">
+          <div class="slide-gradient"></div>
+          <div class="slide-content">
+            <span class="slide-tag">⚡ Atualizado Recentemente</span>
+            <h2>Cyberpunk 2077: Phantom Liberty</h2>
+            <p>Dinheiro Infinito, Munição Ilimitada, Nível Máximo e Sem Recuo.</p>
+            <button class="play-btn" onclick="openGameById('sample-rpg-game')">JOGAR COM MODS</button>
+          </div>
+        </div>
+
+        <div class="carousel-nav">
+          <button class="carousel-btn" onclick="changeHeroSlide(-1)">❮</button>
+          <button class="carousel-btn" onclick="changeHeroSlide(1)">❯</button>
         </div>
       </div>
 
-      <div class="dropzone" id="ct-dropzone" onclick="selectCtFile()">
-        <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
-        <h3 style="font-size: 18px; margin-bottom: 8px;">Arraste e solte o arquivo .CT aqui</h3>
-        <p style="color: var(--text-muted); font-size: 13px;">ou clique para navegar no seu computador</p>
+      <!-- Carrossel Meus Jogos Recentes -->
+      <div class="section-title">
+        <span>Meus Jogos Instalados</span>
+        <span style="font-size: 13px; color: var(--accent); cursor: pointer;" onclick="refreshGames()">↻ Varrer Novamente</span>
+      </div>
+      <div class="cards-row" id="carousel-installed-games">
+        <!-- Injetado via JS -->
       </div>
 
-      <div id="importer-result" style="margin-top: 24px; display: none;">
-        <!-- Resultado da conversão -->
+      <!-- Carrossel Jogos em Alta / Trainers Suportados -->
+      <div class="section-title">
+        <span>Trainers Populares Disponíveis</span>
+      </div>
+      <div class="cards-row" id="carousel-popular-games">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <!-- Tab 2: Favoritos -->
+    <div class="view-content" id="tab-favorites">
+      <div class="section-title">⭐ Meus Jogos Favoritos</div>
+      <div class="cards-row" id="favorites-grid">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <!-- Tab 3: Biblioteca Completa -->
+    <div class="view-content" id="tab-my-games">
+      <div class="section-title">🎮 Biblioteca de Jogos Detectados</div>
+      <div class="maps-grid" id="all-games-grid">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <!-- Tab 4: Detalhes do Trainer do Jogo Selecionado -->
+    <div class="view-content" id="tab-game-details">
+      <div class="game-hero">
+        <div>
+          <div class="game-hero-title">
+            <h2 id="detail-title" style="font-size: 28px; font-weight: 800;">Nome do Jogo</h2>
+            <button class="fav-btn" id="detail-fav-btn" onclick="toggleCurrentFavorite()">⭐</button>
+          </div>
+          <p id="detail-process" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Alvo: Game.exe</p>
+          <div class="playtime-badge">
+            <span>⏱️</span>
+            <span id="detail-playtime">Tempo com mods: 0h 0m</span>
+          </div>
+        </div>
+        <button class="play-btn" id="detail-play-btn" onclick="toggleAttach()">JOGAR COM TRAINER</button>
+      </div>
+
+      <div class="section-title">Cheats e Modificações (<span id="detail-cheat-count">0</span>)</div>
+      <div id="detail-cheats-container">
+        <!-- Cheats do Jogo Injetados -->
+      </div>
+    </div>
+
+    <!-- Tab 5: Mapas Interativos ao Vivo -->
+    <div class="view-content" id="tab-maps">
+      <div class="section-title">🗺️ Mapas Interativos ao Vivo</div>
+      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+        Acompanhe colecionáveis, chefes e pontos de interesse em tempo real enquanto joga.
+      </p>
+      <div class="maps-grid" id="maps-container">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <!-- Tab 6: Clipes & Destaques de Gravação -->
+    <div class="view-content" id="tab-captures">
+      <div class="section-title">🎬 Destaques e Capturas de Gameplay</div>
+      <div class="maps-grid" id="captures-container">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <!-- Tab 7: Studio (Scanner de Memória) -->
+    <div class="view-content" id="tab-studio">
+      <div class="section-title">🧪 Cheat Maker Studio</div>
+      <div class="panel-box">
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+          Varra a memória física de jogos sem trainer e gere assinaturas AOB automaticamente.
+        </p>
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+          <input type="number" id="studio-val" placeholder="Digite o valor (ex: 100 de Vida)..." style="flex: 1; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); color: #fff; border-radius: 8px;" />
+          <button class="play-btn" style="padding: 12px 24px;" onclick="alert('Iniciando First Scan no processo do jogo...')">Primeiro Scan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 8: Importador .CT -->
+    <div class="view-content" id="tab-importer">
+      <div class="section-title">📥 Importador de Tabelas Cheat Engine (.CT)</div>
+      <div class="panel-box" style="text-align: center; padding: 60px 20px; border: 2px dashed rgba(88, 166, 255, 0.4); cursor: pointer;" onclick="alert('Selecione uma tabela .CT baixada do Fearless Revolution para converter!')">
+        <div style="font-size: 48px; margin-bottom: 12px;">📂</div>
+        <h3>Arraste o arquivo .CT aqui</h3>
+        <p style="color: var(--text-muted); font-size: 13px;">O Open Trainer Engine converterá o XML em um trainer nativo instantaneamente.</p>
       </div>
     </div>
   </main>
@@ -360,11 +609,23 @@
   <script>
     const { ipcRenderer } = require('electron');
 
-    let currentTrainers = [];
-    let selectedTrainer = null;
+    let allTrainers = [];
+    let installedGames = [];
+    let selectedGame = null;
     let isAttached = false;
+    let latestUpdateUrl = '';
 
-    // Síntese de áudio para beeps de feedback gamer
+    // Carousel Hero
+    let currentHeroIndex = 0;
+    const heroSlides = document.querySelectorAll('.carousel-slide');
+    function changeHeroSlide(dir) {
+      heroSlides[currentHeroIndex].classList.remove('active');
+      currentHeroIndex = (currentHeroIndex + dir + heroSlides.length) % heroSlides.length;
+      heroSlides[currentHeroIndex].classList.add('active');
+    }
+    setInterval(() => changeHeroSlide(1), 6000);
+
+    // Audio Feedback
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 600, duration = 0.08) {
       try {
@@ -380,129 +641,279 @@
       } catch {}
     }
 
-    function switchView(viewId, btn) {
-      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(viewId).classList.add('active');
-      btn.classList.add('active');
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if (el) el.classList.add('active');
+
+      if (tabId === 'tab-favorites') renderFavorites();
+      if (tabId === 'tab-maps') renderMaps();
+      if (tabId === 'tab-captures') renderCaptures();
     }
 
-    async function loadData() {
-      // 1. Carrega trainers locais
-      currentTrainers = await ipcRenderer.invoke('list-trainers');
-      if (currentTrainers.length > 0) {
-        selectGame(currentTrainers[0]);
+    async function init() {
+      // 1. Checa por atualizações do App no GitHub
+      checkForUpdates();
+
+      // 2. Carrega trainers e bibliotecas
+      allTrainers = await ipcRenderer.invoke('list-trainers');
+      installedGames = await ipcRenderer.invoke('scan-games');
+
+      document.getElementById('games-count').innerText = installedGames.length;
+
+      renderCarousels();
+      updateFavCount();
+    }
+
+    async function checkForUpdates() {
+      try {
+        const info = await ipcRenderer.invoke('check-for-updates');
+        if (info && info.hasUpdate) {
+          const banner = document.getElementById('update-banner');
+          document.getElementById('update-text').innerText = `🚀 Nova atualização disponível: ${info.releaseName} (v${info.latestVersion})!`;
+          latestUpdateUrl = info.downloadUrl || 'https://github.com/Henrique1601/open-trainer-engine/releases';
+          banner.style.display = 'flex';
+        }
+      } catch {}
+    }
+
+    function downloadLatestUpdate() {
+      if (latestUpdateUrl) {
+        ipcRenderer.invoke('open-external-url', latestUpdateUrl);
       }
-
-      // 2. Carrega lista da biblioteca
-      await scanLibraries();
     }
 
-    async function scanLibraries() {
-      const listEl = document.getElementById('games-list');
-      listEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">Varrendo bibliotecas...</div>';
-
-      const games = await ipcRenderer.invoke('scan-games');
+    async function renderCarousels() {
+      // 1. Meus Jogos Instalados
+      const installedContainer = document.getElementById('carousel-installed-games');
+      const allGrid = document.getElementById('all-games-grid');
       let html = '';
 
-      if (currentTrainers.length > 0) {
-        for (const t of currentTrainers) {
+      const thumbs = [
+        'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=500&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80'
+      ];
+
+      if (installedGames.length === 0 && allTrainers.length > 0) {
+        // Exibe ao menos os trainers disponíveis
+        for (let i = 0; i < allTrainers.length; i++) {
+          const t = allTrainers[i];
+          const bg = thumbs[i % thumbs.length];
           html += `
-            <div class="game-item ${selectedTrainer?.id === t.id ? 'active' : ''}" onclick="selectTrainerById('${t.id}')">
-              <span class="game-badge">TRAINER</span>
-              <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.title}</div>
+            <div class="game-card" onclick="openGameTrainer('${t.id}')">
+              <div class="card-thumb" style="background-image: url('${bg}');">
+                <button class="fav-btn" onclick="event.stopPropagation(); toggleFav('${t.id}')">⭐</button>
+              </div>
+              <div class="card-body">
+                <div class="card-title">${t.title}</div>
+                <div class="card-meta">
+                  <span>${t.cheats.length} Mods</span>
+                  <span>PC</span>
+                </div>
+              </div>
             </div>
           `;
         }
       }
 
-      for (const g of games) {
+      for (let i = 0; i < installedGames.length; i++) {
+        const g = installedGames[i];
+        const bg = thumbs[i % thumbs.length];
         html += `
-          <div class="game-item">
-            <span class="game-badge">${g.platform}</span>
-            <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${g.title}</div>
+          <div class="game-card" onclick="openGameById('${g.id}')">
+            <div class="card-thumb" style="background-image: url('${bg}');">
+              <button class="fav-btn" onclick="event.stopPropagation(); toggleFav('${g.id}')">⭐</button>
+            </div>
+            <div class="card-body">
+              <div class="card-title">${g.title}</div>
+              <div class="card-meta">
+                <span>${g.platform.toUpperCase()}</span>
+                <span>Instalado</span>
+              </div>
+            </div>
           </div>
         `;
       }
 
-      listEl.innerHTML = html;
+      installedContainer.innerHTML = html;
+      allGrid.innerHTML = html;
+
+      // 2. Trainers Populares
+      const popularContainer = document.getElementById('carousel-popular-games');
+      let popHtml = '';
+      for (let i = 0; i < allTrainers.length; i++) {
+        const t = allTrainers[i];
+        popHtml += `
+          <div class="game-card" onclick="openGameTrainer('${t.id}')">
+            <div class="card-thumb" style="background-image: url('${thumbs[i % thumbs.length]}');">
+              <button class="fav-btn" onclick="event.stopPropagation(); toggleFav('${t.id}')">⭐</button>
+            </div>
+            <div class="card-body">
+              <div class="card-title">${t.title}</div>
+              <div class="card-meta">
+                <span>${t.cheats.length} Mods</span>
+                <span>v${t.version}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      popularContainer.innerHTML = popHtml;
     }
 
-    function selectTrainerById(id) {
-      const t = currentTrainers.find(x => x.id === id);
-      if (t) selectGame(t);
-    }
+    async function openGameTrainer(trainerId) {
+      const t = allTrainers.find(x => x.id === trainerId);
+      if (!t) return;
+      selectedGame = t;
 
-    function selectGame(trainer) {
-      selectedTrainer = trainer;
-      document.getElementById('active-game-title').innerText = trainer.title;
-      document.getElementById('active-game-meta').innerText = `Alvo: ${trainer.processName} • Versão: ${trainer.version}`;
-      document.getElementById('cheats-count').innerText = trainer.cheats.length;
+      document.getElementById('detail-title').innerText = t.title;
+      document.getElementById('detail-process').innerText = `Alvo: ${t.processName} • Versão: ${t.version}`;
+      document.getElementById('detail-cheat-count').innerText = t.cheats.length;
 
-      let html = '';
-      for (const c of trainer.cheats) {
-        html += `
+      // Obtém dados persistentes (tempo jogado e mods favoritados/salvos)
+      const data = await ipcRenderer.invoke('get-game-stats', t.id);
+      document.getElementById('detail-playtime').innerText = `Tempo com mods: ${data.formattedPlaytime}`;
+      document.getElementById('detail-fav-btn').className = `fav-btn ${data.isFavorite ? 'active' : ''}`;
+
+      let cheatsHtml = '';
+      for (const c of t.cheats) {
+        const isSaved = data.savedMods[c.id]?.enabled || false;
+        cheatsHtml += `
           <div class="cheat-row">
             <div>
-              <div class="cheat-title">${c.name}</div>
-              <div class="cheat-sub">
+              <div class="cheat-name">${c.name}</div>
+              <div class="cheat-tags">
                 ${c.hotkey ? `<span class="hotkey-badge">${c.hotkey}</span>` : ''}
                 <span>${c.category} • ${c.type}</span>
               </div>
             </div>
             <label class="switch">
-              <input type="checkbox" id="cheat-toggle-${c.id}" onchange="onCheatChange('${c.id}', this.checked)">
+              <input type="checkbox" id="toggle-${c.id}" ${isSaved ? 'checked' : ''} onchange="toggleCheatAction('${c.id}', this.checked)">
               <span class="slider"></span>
             </label>
           </div>
         `;
       }
-      document.getElementById('cheats-list').innerHTML = html;
+      document.getElementById('detail-cheats-container').innerHTML = cheatsHtml;
+
+      switchTab('tab-game-details');
     }
 
     async function toggleAttach() {
-      const btn = document.getElementById('attach-btn');
+      const btn = document.getElementById('detail-play-btn');
       if (isAttached) {
         await ipcRenderer.invoke('detach-trainer');
         isAttached = false;
         btn.innerText = 'JOGAR COM TRAINER';
         btn.classList.remove('active');
+        document.getElementById('footer-status').innerText = 'Desconectado';
         playBeep(400, 0.12);
       } else {
         btn.innerText = 'CONECTANDO...';
-        const res = await ipcRenderer.invoke('attach-trainer', selectedTrainer);
+        const res = await ipcRenderer.invoke('attach-trainer', selectedGame);
         if (res.success) {
           isAttached = true;
           btn.innerText = 'DESCONECTAR';
           btn.classList.add('active');
+          document.getElementById('footer-status').innerText = `Jogando: ${selectedGame.title}`;
           playBeep(880, 0.15);
         } else {
-          alert('Não foi possível anexar ao jogo: ' + res.error + '\nCertifique-se de que o jogo está aberto.');
+          alert('Jogo não encontrado na memória.\nAbra ' + selectedGame.processName + ' antes de ativar.');
           btn.innerText = 'JOGAR COM TRAINER';
           btn.classList.remove('active');
         }
       }
     }
 
-    async function onCheatChange(cheatId, enabled) {
+    async function toggleCheatAction(cheatId, enabled) {
       if (!isAttached) {
         alert('Anexe o trainer ao jogo antes de ativar cheats.');
-        document.getElementById(`cheat-toggle-${cheatId}`).checked = false;
+        document.getElementById(`toggle-${cheatId}`).checked = false;
         return;
       }
       playBeep(enabled ? 880 : 440, 0.07);
-      await ipcRenderer.invoke('toggle-cheat', cheatId);
+      await ipcRenderer.invoke('toggle-cheat', cheatId, enabled);
     }
 
-    ipcRenderer.on('cheat-toggled-event', (_event, data) => {
-      const toggle = document.getElementById(`cheat-toggle-${data.cheatId}`);
-      if (toggle) {
-        toggle.checked = data.enabled;
-        playBeep(data.enabled ? 880 : 440, 0.07);
+    async function toggleFav(id) {
+      await ipcRenderer.invoke('toggle-favorite', id);
+      updateFavCount();
+    }
+
+    async function toggleCurrentFavorite() {
+      if (!selectedGame) return;
+      const isFav = await ipcRenderer.invoke('toggle-favorite', selectedGame.id);
+      document.getElementById('detail-fav-btn').className = `fav-btn ${isFav ? 'active' : ''}`;
+      updateFavCount();
+    }
+
+    async function updateFavCount() {
+      const prefs = await ipcRenderer.invoke('get-preferences');
+      document.getElementById('fav-count').innerText = prefs.favorites.length;
+    }
+
+    async function renderFavorites() {
+      const prefs = await ipcRenderer.invoke('get-preferences');
+      const container = document.getElementById('favorites-grid');
+      if (prefs.favorites.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); padding: 40px;">Você ainda não marcou nenhum jogo como favorito. Clique na estrela ⭐ de qualquer jogo para adicioná-lo aqui.</div>';
+        return;
+      }
+      let html = '';
+      for (const favId of prefs.favorites) {
+        const t = allTrainers.find(x => x.id === favId) || { title: favId, cheats: [] };
+        html += `
+          <div class="game-card" onclick="openGameTrainer('${favId}')">
+            <div class="card-thumb" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80');">
+              <button class="fav-btn active" onclick="event.stopPropagation(); toggleFav('${favId}')">⭐</button>
+            </div>
+            <div class="card-body">
+              <div class="card-title">${t.title}</div>
+              <div class="card-meta"><span>Favorito</span></div>
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    async function renderMaps() {
+      const maps = await ipcRenderer.invoke('get-maps');
+      const container = document.getElementById('maps-container');
+      let html = '';
+      for (const m of maps) {
+        html += `
+          <div class="map-card" onclick="ipcRenderer.invoke('open-external-url', '${m.mapUrl}')">
+            <div class="map-img" style="background-image: url('${m.coverImage}');"></div>
+            <div class="map-info">
+              <div class="map-title">${m.gameTitle}</div>
+              <div class="map-desc">${m.description}</div>
+              <button class="play-btn" style="padding: 8px 18px; font-size: 12px;">Abrir Mapa ao Vivo ↗</button>
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    async function renderCaptures() {
+      const captures = await ipcRenderer.invoke('get-captures');
+      const container = document.getElementById('captures-container');
+      if (captures.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); padding: 40px;">Nenhuma captura de tela ou gravação de highlight encontrada em Videos/OpenTrainerEngine.</div>';
+        return;
+      }
+    }
+
+    ipcRenderer.on('playtime-updated', (_event, data) => {
+      if (selectedGame && selectedGame.id === data.gameId) {
+        document.getElementById('detail-playtime').innerText = `Tempo com mods: ${data.formatted}`;
       }
     });
 
-    loadData();
+    init();
   </script>
 </body>
 </html>

@@ -19,3 +19,8 @@ export * from './core/overlay/overlay-server.js';
 export * from './core/studio/memory-scanner-studio.js';
 export * from './core/importers/ct-importer.js';
 export * from './core/updater/auto-healer.js';
+
+export * from './core/storage/preferences-store.js';
+export * from './core/updater/app-updater.js';
+export * from './core/maps/game-maps.js';
+export * from './core/captures/captures-manager.js';
