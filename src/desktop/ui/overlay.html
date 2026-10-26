@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>HUD Overlay</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: rgba(13, 17, 23, 0.88);
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 16px;
+      user-select: none;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .title-group h2 { font-size: 13px; font-weight: 700; color: #58a6ff; }
+    .title-group span { font-size: 10px; color: #8b949e; }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #238636;
+      box-shadow: 0 0 8px #2ea043;
+    }
+    .cheat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .cheat-item.active {
+      background: rgba(35, 134, 54, 0.2);
+      border: 1px solid rgba(46, 160, 67, 0.4);
+    }
+    .hotkey-badge {
+      background: #21262d;
+      border: 1px solid #30363d;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #79c0ff;
+    }
+    .cheat-status {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8b949e;
+    }
+    .cheat-status.on {
+      color: #3fb950;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-group">
+      <h2>In-Game HUD Overlay</h2>
+      <span>Pressione Ctrl+G para alternar</span>
+    </div>
+    <div class="status-dot"></div>
+  </header>
+
+  <div id="cheats-container">
+    <div class="cheat-item">
+      <span><span class="hotkey-badge">F1</span> Modo Deus</span>
+      <span class="cheat-status" id="status-god_mode">OFF</span>
+    </div>
+    <div class="cheat-item">
+      <span><span class="hotkey-badge">F2</span> Estamina Infinita</span>
+      <span class="cheat-status" id="status-infinite_stamina">OFF</span>
+    </div>
+    <div class="cheat-item">
+      <span><span class="hotkey-badge">F3</span> Ouro Infinito</span>
+      <span class="cheat-status" id="status-infinite_gold">OFF</span>
+    </div>
+    <div class="cheat-item">
+      <span><span class="hotkey-badge">F4</span> Speedhack (2.5x)</span>
+      <span class="cheat-status" id="status-game_speed">OFF</span>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    ipcRenderer.on('cheat-toggled-event', (_event, data) => {
+      const el = document.getElementById(`status-${data.cheatId}`);
+      if (el) {
+        el.innerText = data.enabled ? 'ON' : 'OFF';
+        el.className = `cheat-status ${data.enabled ? 'on' : ''}`;
+        el.closest('.cheat-item').className = `cheat-item ${data.enabled ? 'active' : ''}`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Open Trainer Engine</title>
+  <style>
+    :root {
+      --bg-main: #0d1117;
+      --bg-sidebar: #161b22;
+      --bg-card: #21262d;
+      --bg-input: #0b0e14;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent: #58a6ff;
+      --accent-green: #238636;
+      --accent-green-glow: #2ea043;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      height: 100vh;
+      display: flex;
+      user-select: none;
+      overflow: hidden;
+    }
+    /* Sidebar */
+    aside {
+      width: 280px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+    .logo-container {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .logo-icon {
+      font-size: 24px;
+      background: rgba(88, 166, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px;
+    }
+    .logo-title h1 { font-size: 16px; font-weight: 700; color: #fff; }
+    .logo-title span { font-size: 11px; color: var(--accent); font-weight: 600; }
+    .nav-tabs {
+      display: flex;
+      padding: 10px 14px;
+      gap: 6px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+    .games-header {
+      padding: 14px 16px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .games-header span { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    .scan-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .games-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .game-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      transition: all 0.15s;
+    }
+    .game-item:hover { background: rgba(255, 255, 255, 0.04); }
+    .game-item.active { background: rgba(88, 166, 255, 0.15); color: #fff; }
+    .game-badge {
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: #21262d;
+      color: #8b949e;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    /* Main Content */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .view-container { display: none; padding: 32px; flex: 1; }
+    .view-container.active { display: flex; flex-direction: column; }
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(88, 166, 255, 0.1) 0%, rgba(35, 134, 54, 0.1) 100%), var(--bg-sidebar);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .hero-info h2 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    .hero-info p { font-size: 13px; color: var(--text-muted); }
+    .play-btn {
+      background: var(--accent-green);
+      color: #fff;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px rgba(35, 134, 54, 0.4);
+    }
+    .play-btn:hover { background: var(--accent-green-glow); transform: translateY(-1px); }
+    .play-btn.active { background: #da3633; box-shadow: 0 4px 16px rgba(218, 54, 51, 0.4); }
+    /* Cheats Section */
+    .cheats-section h3 { font-size: 15px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; font-weight: 700; }
+    .cheat-row {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    .cheat-row:hover { border-color: rgba(88, 166, 255, 0.3); }
+    .cheat-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .cheat-sub { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .hotkey-badge {
+      background: #0d1117;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    /* Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #30363d;
+      transition: .3s;
+      border-radius: 26px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--accent-green); }
+    input:checked + .slider:before { transform: translateX(22px); }
+    /* Studio / Scanner UI */
+    .studio-panel {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .input-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .input-field {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      flex: 1;
+    }
+    .action-btn {
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed rgba(88, 166, 255, 0.4);
+      border-radius: 12px;
+      padding: 60px 20px;
+      text-align: center;
+      background: rgba(88, 166, 255, 0.03);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dropzone:hover {
+      background: rgba(88, 166, 255, 0.08);
+      border-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside>
+    <div class="logo-container">
+      <div class="logo-icon">🧙‍♂️</div>
+      <div class="logo-title">
+        <h1>Open Trainer</h1>
+        <span>ENGINE v0.1.0</span>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchView('trainer-view', this)">Trainers</button>
+      <button class="tab-btn" onclick="switchView('studio-view', this)">Studio</button>
+      <button class="tab-btn" onclick="switchView('importer-view', this)">Importar .CT</button>
+    </div>
+
+    <div class="games-header">
+      <span>Seus Jogos</span>
+      <button class="scan-btn" onclick="scanLibraries()">↻ Atualizar</button>
+    </div>
+
+    <div class="games-list" id="games-list">
+      <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        Varrendo bibliotecas...
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main>
+    <!-- View 1: Trainers -->
+    <div class="view-container active" id="trainer-view">
+      <div class="hero-banner">
+        <div class="hero-info">
+          <h2 id="active-game-title">Sample RPG Adventure</h2>
+          <p id="active-game-meta">Alvo: SampleGame.exe • Plataforma: Steam/Epic</p>
+        </div>
+        <button class="play-btn" id="attach-btn" onclick="toggleAttach()">JOGAR COM TRAINER</button>
+      </div>
+
+      <div class="cheats-section">
+        <h3>Opções Disponíveis (<span id="cheats-count">4</span>)</h3>
+        <div id="cheats-list">
+          <!-- Lista de Cheats injetada via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- View 2: Studio (Memory Scanner) -->
+    <div class="view-container" id="studio-view">
+      <div class="hero-banner">
+        <div class="hero-info">
+          <h2>Cheat Maker Studio</h2>
+          <p>Varra a memória do jogo para criar cheats do zero em jogos que não possuem trainer.</p>
+        </div>
+      </div>
+
+      <div class="studio-panel">
+        <div class="input-group">
+          <input type="number" class="input-field" id="scan-value" placeholder="Digite o valor exato (ex: 100 de Vida)..." />
+          <select class="input-field" id="scan-type" style="max-width: 140px;">
+            <option value="int32">4 Bytes (Int32)</option>
+            <option value="float">Float</option>
+            <option value="double">Double</option>
+            <option value="int64">8 Bytes (Int64)</option>
+          </select>
+          <button class="action-btn" onclick="executeFirstScan()">Primeiro Scan</button>
+          <button class="action-btn" style="background: var(--bg-card); color: #fff;" onclick="executeNextScan()">Próximo Scan</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 13px; color: var(--text-muted);" id="scan-results-count">Resultados: 0</span>
+          <button class="action-btn" style="background: var(--accent-green); color: #fff; font-size: 12px; padding: 6px 14px;" onclick="exportDiscoveredCheat()">
+            + Salvar como Novo Cheat
+          </button>
+        </div>
+
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; height: 320px; overflow-y: auto; padding: 12px;" id="scan-results-list">
+          <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding-top: 130px;">
+            Inicie um escaneamento para listar endereços de memória.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View 3: Importer .CT -->
+    <div class="view-container" id="importer-view">
+      <div class="hero-banner">
+        <div class="hero-info">
+          <h2>Importador de Tabelas Cheat Engine (.CT)</h2>
+          <p>Arraste tabelas .CT da comunidade para converter instantaneamente em trainers nativos.</p>
+        </div>
+      </div>
+
+      <div class="dropzone" id="ct-dropzone" onclick="selectCtFile()">
+        <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
+        <h3 style="font-size: 18px; margin-bottom: 8px;">Arraste e solte o arquivo .CT aqui</h3>
+        <p style="color: var(--text-muted); font-size: 13px;">ou clique para navegar no seu computador</p>
+      </div>
+
+      <div id="importer-result" style="margin-top: 24px; display: none;">
+        <!-- Resultado da conversão -->
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    let currentTrainers = [];
+    let selectedTrainer = null;
+    let isAttached = false;
+
+    // Síntese de áudio para beeps de feedback gamer
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 600, duration = 0.08) {
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch {}
+    }
+
+    function switchView(viewId, btn) {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    async function loadData() {
+      // 1. Carrega trainers locais
+      currentTrainers = await ipcRenderer.invoke('list-trainers');
+      if (currentTrainers.length > 0) {
+        selectGame(currentTrainers[0]);
+      }
+
+      // 2. Carrega lista da biblioteca
+      await scanLibraries();
+    }
+
+    async function scanLibraries() {
+      const listEl = document.getElementById('games-list');
+      listEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">Varrendo bibliotecas...</div>';
+
+      const games = await ipcRenderer.invoke('scan-games');
+      let html = '';
+
+      if (currentTrainers.length > 0) {
+        for (const t of currentTrainers) {
+          html += `
+            <div class="game-item ${selectedTrainer?.id === t.id ? 'active' : ''}" onclick="selectTrainerById('${t.id}')">
+              <span class="game-badge">TRAINER</span>
+              <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.title}</div>
+            </div>
+          `;
+        }
+      }
+
+      for (const g of games) {
+        html += `
+          <div class="game-item">
+            <span class="game-badge">${g.platform}</span>
+            <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${g.title}</div>
+          </div>
+        `;
+      }
+
+      listEl.innerHTML = html;
+    }
+
+    function selectTrainerById(id) {
+      const t = currentTrainers.find(x => x.id === id);
+      if (t) selectGame(t);
+    }
+
+    function selectGame(trainer) {
+      selectedTrainer = trainer;
+      document.getElementById('active-game-title').innerText = trainer.title;
+      document.getElementById('active-game-meta').innerText = `Alvo: ${trainer.processName} • Versão: ${trainer.version}`;
+      document.getElementById('cheats-count').innerText = trainer.cheats.length;
+
+      let html = '';
+      for (const c of trainer.cheats) {
+        html += `
+          <div class="cheat-row">
+            <div>
+              <div class="cheat-title">${c.name}</div>
+              <div class="cheat-sub">
+                ${c.hotkey ? `<span class="hotkey-badge">${c.hotkey}</span>` : ''}
+                <span>${c.category} • ${c.type}</span>
+              </div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="cheat-toggle-${c.id}" onchange="onCheatChange('${c.id}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        `;
+      }
+      document.getElementById('cheats-list').innerHTML = html;
+    }
+
+    async function toggleAttach() {
+      const btn = document.getElementById('attach-btn');
+      if (isAttached) {
+        await ipcRenderer.invoke('detach-trainer');
+        isAttached = false;
+        btn.innerText = 'JOGAR COM TRAINER';
+        btn.classList.remove('active');
+        playBeep(400, 0.12);
+      } else {
+        btn.innerText = 'CONECTANDO...';
+        const res = await ipcRenderer.invoke('attach-trainer', selectedTrainer);
+        if (res.success) {
+          isAttached = true;
+          btn.innerText = 'DESCONECTAR';
+          btn.classList.add('active');
+          playBeep(880, 0.15);
+        } else {
+          alert('Não foi possível anexar ao jogo: ' + res.error + '\nCertifique-se de que o jogo está aberto.');
+          btn.innerText = 'JOGAR COM TRAINER';
+          btn.classList.remove('active');
+        }
+      }
+    }
+
+    async function onCheatChange(cheatId, enabled) {
+      if (!isAttached) {
+        alert('Anexe o trainer ao jogo antes de ativar cheats.');
+        document.getElementById(`cheat-toggle-${cheatId}`).checked = false;
+        return;
+      }
+      playBeep(enabled ? 880 : 440, 0.07);
+      await ipcRenderer.invoke('toggle-cheat', cheatId);
+    }
+
+    ipcRenderer.on('cheat-toggled-event', (_event, data) => {
+      const toggle = document.getElementById(`cheat-toggle-${data.cheatId}`);
+      if (toggle) {
+        toggle.checked = data.enabled;
+        playBeep(data.enabled ? 880 : 440, 0.07);
+      }
+    });
+
+    loadData();
+  </script>
+</body>
+</html>

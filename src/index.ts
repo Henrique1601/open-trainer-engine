@@ -15,3 +15,7 @@ export * from './core/trainer/trainer-session.js';
 
 export * from './core/overlay/hotkey-manager.js';
 export * from './core/overlay/overlay-server.js';
+
+export * from './core/studio/memory-scanner-studio.js';
+export * from './core/importers/ct-importer.js';
+export * from './core/updater/auto-healer.js';

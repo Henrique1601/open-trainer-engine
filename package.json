@@ -26,7 +26,8 @@
     "url": "https://github.com/Henrique1601/open-trainer-engine.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs = require('fs'); fs.mkdirSync('dist/desktop/ui', {recursive:true}); fs.copyFileSync('src/desktop/ui/index.html', 'dist/desktop/ui/index.html'); fs.copyFileSync('src/desktop/ui/overlay.html', 'dist/desktop/ui/overlay.html');\"",
+    "app": "npm run build && electron dist/desktop/main.js",
     "cli": "tsx src/cli/index.ts",
     "scan": "tsx src/cli/index.ts scan",
     "trainers": "tsx src/cli/index.ts trainers",
@@ -35,10 +36,12 @@
     "validate:schema": "node -e \"console.log('Schema validation OK')\""
   },
   "dependencies": {
+    "fast-xml-parser": "^5.4.1",
     "koffi": "^3.3.4"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "electron": "^41.1.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"
