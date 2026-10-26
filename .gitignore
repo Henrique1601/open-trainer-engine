@@ -1,0 +1,43 @@
+# ==============================================================================
+# Open Trainer Engine - .gitignore
+# ==============================================================================
+
+# Ambientes e Segredos
+.env
+.env*.local
+*.pem
+*.key
+*.pfx
+
+# Dependências e Builds
+node_modules/
+dist/
+build/
+out/
+target/
+bin/
+obj/
+*.pyc
+__pycache__/
+
+# Binários Pesados e Executáveis Locais (Distribuídos via GitHub Releases)
+*.exe
+*.msi
+*.dll
+*.node
+*.pdb
+*.lib
+*.so
+*.dylib
+
+# Caches e Arquivos Temporários de Sistema / Ferramentas
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+.gemini/
+scratch/
+tmp/
+coverage/
+*.tmp

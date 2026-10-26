@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrainerContract",
+  "type": "object",
+  "required": ["id", "title", "processName", "version", "cheats"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Identificador único do trainer (kebab-case)."
+    },
+    "title": {
+      "type": "string",
+      "description": "Nome de exibição do jogo."
+    },
+    "processName": {
+      "type": "string",
+      "description": "Nome do arquivo executável principal (ex: Game.exe)."
+    },
+    "version": {
+      "type": "string",
+      "description": "Versão compatível do jogo."
+    },
+    "supportedPlatforms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["steam", "epic", "gog", "uplay", "xbox", "standalone"]
+      }
+    },
+    "cheats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "category", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["aob_patch", "pointer_freeze", "lua_script", "speedhack"]
+          },
+          "pattern": { "type": "string" },
+          "replace": { "type": "string" },
+          "baseModule": { "type": "string" },
+          "pointerChain": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "valueType": {
+            "type": "string",
+            "enum": ["int32", "int64", "float", "double", "byte"]
+          },
+          "value": { "type": ["number", "boolean", "string"] },
+          "hotkey": { "type": "string" }
+        }
+      }
+    }
+  }
+}
