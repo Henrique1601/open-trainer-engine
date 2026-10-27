@@ -2,21 +2,80 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>HUD Overlay</title>
+  <title>HUD Overlay & OSD Toasts</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: rgba(13, 17, 23, 0.88);
+      background: transparent;
       color: #e6edf3;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      padding: 16px;
+      padding: 12px;
       user-select: none;
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
       overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
+
+    /* In-Game OSD Toasts Flutuantes */
+    #osd-container {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .osd-toast {
+      background: rgba(13, 17, 23, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-left: 4px solid #58a6ff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(14px);
+      animation: slideInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: all 0.3s ease;
+    }
+    .osd-toast.on {
+      border-left-color: #3fb950;
+      box-shadow: 0 8px 24px rgba(46, 160, 67, 0.35);
+    }
+    .osd-toast.off {
+      border-left-color: #f85149;
+    }
+    .osd-toast.fade-out {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Menu do HUD Overlay */
+    #overlay-menu {
+      background: rgba(13, 17, 23, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
     header {
       display: flex;
       justify-content: space-between;
@@ -25,7 +84,7 @@
       padding-bottom: 10px;
       margin-bottom: 12px;
     }
-    .title-group h2 { font-size: 13px; font-weight: 700; color: #58a6ff; }
+    .title-group h2 { font-size: 14px; font-weight: 800; color: #58a6ff; letter-spacing: -0.2px; }
     .title-group span { font-size: 10px; color: #8b949e; }
     .status-dot {
       width: 8px;
@@ -33,6 +92,44 @@
       border-radius: 50%;
       background: #238636;
       box-shadow: 0 0 8px #2ea043;
+    }
+
+    .tools-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .tool-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e6edf3;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: #58a6ff;
+    }
+    .tool-btn.active {
+      background: #f59e0b;
+      color: #000;
+      border-color: #f59e0b;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+
+    #cheats-list {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
     }
     .cheat-item {
       display: flex;
@@ -43,10 +140,15 @@
       background: rgba(255, 255, 255, 0.03);
       margin-bottom: 6px;
       font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .cheat-item:hover {
+      background: rgba(255, 255, 255, 0.07);
     }
     .cheat-item.active {
-      background: rgba(35, 134, 54, 0.2);
-      border: 1px solid rgba(46, 160, 67, 0.4);
+      background: rgba(35, 134, 54, 0.22);
+      border: 1px solid rgba(46, 160, 67, 0.45);
     }
     .hotkey-badge {
       background: #21262d;
@@ -56,6 +158,7 @@
       font-family: monospace;
       font-size: 11px;
       color: #79c0ff;
+      margin-right: 6px;
     }
     .cheat-status {
       font-size: 10px;
@@ -68,36 +171,64 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="title-group">
-      <h2>In-Game HUD Overlay</h2>
-      <span>Pressione Ctrl+G para alternar</span>
-    </div>
-    <div class="status-dot"></div>
-  </header>
 
-  <div id="cheats-container">
-    <div class="cheat-item">
-      <span><span class="hotkey-badge">F1</span> Modo Deus</span>
-      <span class="cheat-status" id="status-god_mode">OFF</span>
+  <!-- In-Game OSD Toasts -->
+  <div id="osd-container"></div>
+
+  <!-- HUD Overlay Menu -->
+  <div id="overlay-menu">
+    <header>
+      <div class="title-group">
+        <h2>In-Game HUD Overlay</h2>
+        <span>Ctrl+G alternar • F11 Screenshot</span>
+      </div>
+      <div class="status-dot"></div>
+    </header>
+
+    <!-- Barra de Ferramentas In-Game (Auto-Pause e Captura) -->
+    <div class="tools-bar">
+      <button class="tool-btn" id="btn-pause-game" onclick="toggleGamePause()">
+        <span>⏸</span> Auto-Pause Jogo
+      </button>
+      <button class="tool-btn" onclick="takeInGameScreenshot()">
+        <span>📷</span> Screenshot
+      </button>
     </div>
-    <div class="cheat-item">
-      <span><span class="hotkey-badge">F2</span> Estamina Infinita</span>
-      <span class="cheat-status" id="status-infinite_stamina">OFF</span>
-    </div>
-    <div class="cheat-item">
-      <span><span class="hotkey-badge">F3</span> Ouro Infinito</span>
-      <span class="cheat-status" id="status-infinite_gold">OFF</span>
-    </div>
-    <div class="cheat-item">
-      <span><span class="hotkey-badge">F4</span> Speedhack (2.5x)</span>
-      <span class="cheat-status" id="status-game_speed">OFF</span>
+
+    <!-- Lista de Cheats do Jogo -->
+    <div id="cheats-list">
+      <div style="color: #8b949e; font-size: 12px; text-align: center; padding: 20px;">
+        Nenhum jogo ou trainer anexado no momento.
+      </div>
     </div>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
 
+    let currentCheats = [];
+
+    // OSD Toast Notification
+    function showOsdToast(title, message, isEnabled) {
+      const container = document.getElementById('osd-container');
+      const toast = document.createElement('div');
+      toast.className = `osd-toast ${isEnabled ? 'on' : 'off'}`;
+      toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>${isEnabled ? '🟢' : '⚪'}</span>
+          <span>${title}</span>
+        </div>
+        <span style="font-size: 11px; opacity: 0.85;">${message}</span>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    // Recebe evento de alternância de cheat (Ativação de Mod)
     ipcRenderer.on('cheat-toggled-event', (_event, data) => {
       const el = document.getElementById(`status-${data.cheatId}`);
       if (el) {
@@ -105,7 +236,54 @@
         el.className = `cheat-status ${data.enabled ? 'on' : ''}`;
         el.closest('.cheat-item').className = `cheat-item ${data.enabled ? 'active' : ''}`;
       }
+      showOsdToast(data.cheatName || data.cheatId, data.enabled ? 'MOD ATIVADO' : 'MOD DESATIVADO', data.enabled);
     });
+
+    // Recebe atualização de lista de cheats do jogo ativo
+    ipcRenderer.on('sync-overlay-cheats', (_event, data) => {
+      const list = document.getElementById('cheats-list');
+      if (!data.cheats || data.cheats.length === 0) {
+        list.innerHTML = '<div style="color: #8b949e; font-size: 12px; text-align: center; padding: 20px;">Nenhum trainer ativo no momento.</div>';
+        return;
+      }
+      currentCheats = data.cheats;
+      list.innerHTML = data.cheats.map(c => `
+        <div class="cheat-item ${c.active ? 'active' : ''}" onclick="toggleCheat('${c.id}')">
+          <div>
+            ${c.hotkey ? `<span class="hotkey-badge">${c.hotkey}</span>` : ''}
+            <span>${c.name}</span>
+          </div>
+          <span class="cheat-status ${c.active ? 'on' : ''}" id="status-${c.id}">${c.active ? 'ON' : 'OFF'}</span>
+        </div>
+      `).join('');
+    });
+
+    // Notificação de screenshot capturada
+    ipcRenderer.on('screenshot-taken-event', (_event, data) => {
+      showOsdToast('Screenshot Salva', data.fileName || 'Captura registrada', true);
+    });
+
+    async function toggleCheat(cheatId) {
+      await ipcRenderer.invoke('toggle-cheat', cheatId);
+    }
+
+    async function toggleGamePause() {
+      const btn = document.getElementById('btn-pause-game');
+      const res = await ipcRenderer.invoke('game:toggle-pause');
+      if (res.isPaused) {
+        btn.classList.add('active');
+        btn.innerHTML = '<span>▶</span> Jogo Pausado';
+        showOsdToast('Game Paused', 'Thread do jogo congelada com segurança', true);
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '<span>⏸</span> Auto-Pause Jogo';
+        showOsdToast('Game Resumed', 'Execução do jogo retomada', false);
+      }
+    }
+
+    async function takeInGameScreenshot() {
+      await ipcRenderer.invoke('game:capture-screenshot');
+    }
   </script>
 </body>
 </html>

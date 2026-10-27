@@ -18,6 +18,8 @@ import { HexViewer } from '../core/studio/hex-viewer.js';
 import { AntiCheatDetector } from '../core/security/anti-cheat-detector.js';
 import { ProfileManager } from '../core/storage/profile-manager.js';
 import { GameLauncher } from '../core/scanner/game-launcher.js';
+import { GameProcessPauser } from '../core/memory/process-pauser.js';
+import { GameScreenshotCapture } from '../core/captures/screenshot-capture.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +35,19 @@ const speedhack = new SpeedhackEngine();
 let cloudHub: CloudTrainerHub | null = null;
 
 function syncRemoteServerState() {
+  if (overlayWindow && activeSession) {
+    const activeCheats = new Set(activeSession.getActiveCheats());
+    overlayWindow.webContents.send('sync-overlay-cheats', {
+      gameTitle: activeSession.contract.title,
+      cheats: activeSession.contract.cheats.map(c => ({
+        id: c.id,
+        name: c.name,
+        hotkey: c.hotkey || '',
+        category: c.category,
+        active: activeCheats.has(c.id)
+      }))
+    });
+  }
   if (!activeSession) {
     remoteServer.updateState({
       gameTitle: null,
@@ -162,6 +177,16 @@ app.whenReady().then(async () => {
   createOverlayWindow();
 
   // Atalho global Ctrl+G para alternar o HUD In-Game
+  
+  // Atalho global F11 para Screenshot In-Game
+  globalShortcut.register('F11', async () => {
+    const res = await GameScreenshotCapture.capturePrimaryScreen();
+    if (res.success) {
+      mainWindow?.webContents.send('screenshot-taken-event', res);
+      overlayWindow?.webContents.send('screenshot-taken-event', res);
+    }
+  });
+
   globalShortcut.register('CommandOrControl+G', () => {
     if (!overlayWindow) return;
     if (overlayWindow.isVisible()) {
@@ -450,4 +475,29 @@ ipcMain.handle('updater:install-and-restart', async (_event, silent: boolean = t
   }
   AppUpdater.installAndRestart(downloadedInstallerPath, silent);
   return { success: true };
+});
+
+
+// ==============================================================================
+// In-Game OSD & Overlay Controls (Auto-Pause & Screenshot)
+// ==============================================================================
+ipcMain.handle('game:toggle-pause', async () => {
+  if (!activeSession) {
+    return { isPaused: false, message: 'Nenhum jogo ativo.' };
+  }
+  const pid = (activeSession as any).processHandle?.pid || (activeSession as any).pid || null;
+  if (!pid) {
+    return { isPaused: false, message: 'PID do jogo não identificado.' };
+  }
+  const isPaused = GameProcessPauser.toggle(pid);
+  return { isPaused, pid };
+});
+
+ipcMain.handle('game:capture-screenshot', async () => {
+  const res = await GameScreenshotCapture.capturePrimaryScreen();
+  if (res.success) {
+    mainWindow?.webContents.send('screenshot-taken-event', res);
+    overlayWindow?.webContents.send('screenshot-taken-event', res);
+  }
+  return res;
 });
