@@ -602,8 +602,17 @@
 
   <!-- Notificação Flutuante de Nova Versão (Auto-Update) -->
   <div id="update-banner">
-    <span id="update-text">🚀 Nova versão disponível!</span>
-    <button onclick="downloadLatestUpdate()">Atualizar Agora</button>
+    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+      <span id="update-text">🚀 Nova versão disponível!</span>
+      <div id="update-progress-container" style="display: none; flex: 1; max-width: 280px; background: rgba(0,0,0,0.3); height: 10px; border-radius: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
+        <div id="update-progress-bar" style="background: #fff; width: 0%; height: 100%; transition: width 0.2s ease;"></div>
+      </div>
+      <span id="update-progress-text" style="font-size: 11px; display: none; font-family: monospace;">0%</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button id="update-action-btn" onclick="startInAppUpdate()">Atualizar Direto no App ⚡</button>
+      <button style="background: rgba(0,0,0,0.25);" onclick="dismissUpdateBanner()">✕</button>
+    </div>
   </div>
 
   <!-- Sidebar -->
@@ -612,7 +621,7 @@
       <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
       <div class="brand-text">
         <h1>Open Trainer</h1>
-        <span>Engine v0.2.0</span>
+        <span id="engine-version-label">Engine v0.3.0</span>
       </div>
     </div>
 
@@ -964,22 +973,76 @@
       updateFavCount();
     }
 
+        let activeUpdateInfo = null;
+
     async function checkForUpdates() {
       try {
         const info = await ipcRenderer.invoke('check-for-updates');
         if (info && info.hasUpdate) {
+          activeUpdateInfo = info;
           const banner = document.getElementById('update-banner');
-          document.getElementById('update-text').innerText = `🚀 Nova atualização disponível: ${info.releaseName} (v${info.latestVersion})!`;
+          document.getElementById('update-text').innerText = `🚀 Nova versão disponível: ${info.releaseName} (v${info.latestVersion})`;
           latestUpdateUrl = info.downloadUrl || 'https://github.com/Henrique1601/open-trainer-engine/releases';
           banner.style.display = 'flex';
+          speakWeModFeedback('A new update is ready to install');
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Erro ao checar updates:', err);
+      }
     }
 
-    function downloadLatestUpdate() {
-      if (latestUpdateUrl) {
-        ipcRenderer.invoke('open-external-url', latestUpdateUrl);
+    function dismissUpdateBanner() {
+      const banner = document.getElementById('update-banner');
+      if (banner) banner.style.display = 'none';
+    }
+
+    async function startInAppUpdate() {
+      if (!activeUpdateInfo || !activeUpdateInfo.downloadUrl) {
+        if (latestUpdateUrl) ipcRenderer.invoke('open-external-url', latestUpdateUrl);
+        return;
       }
+
+      const btn = document.getElementById('update-action-btn');
+      const progBox = document.getElementById('update-progress-container');
+      const progText = document.getElementById('update-progress-text');
+      const bar = document.getElementById('update-progress-bar');
+
+      btn.disabled = true;
+      btn.innerText = 'Baixando...';
+      progBox.style.display = 'block';
+      progText.style.display = 'inline';
+
+      // Ouve eventos de progresso via IPC
+      ipcRenderer.on('updater:progress', (_event, data) => {
+        bar.style.width = data.percent + '%';
+        progText.innerText = data.percent + '%';
+      });
+
+      try {
+        const res = await ipcRenderer.invoke('updater:download-update', activeUpdateInfo.downloadUrl, activeUpdateInfo.fileName);
+        if (res.success) {
+          btn.innerText = 'Instalando e Reiniciando...';
+          speakWeModFeedback('Update downloaded. Restarting app.');
+          setTimeout(async () => {
+            await ipcRenderer.invoke('updater:install-and-restart', true);
+          }, 1200);
+        } else {
+          alert('Erro no download: ' + res.error + '\nAbrindo navegador...');
+          ipcRenderer.invoke('open-external-url', activeUpdateInfo.downloadUrl);
+          progBox.style.display = 'none';
+          progText.style.display = 'none';
+          btn.disabled = false;
+          btn.innerText = 'Tentar Novamente';
+        }
+      } catch (err) {
+        alert('Falha na atualização: ' + err.message);
+        ipcRenderer.invoke('open-external-url', activeUpdateInfo.downloadUrl);
+        progBox.style.display = 'none';
+        progText.style.display = 'none';
+        btn.disabled = false;
+        btn.innerText = 'Tentar Novamente';
+      }
+    }
     }
 
     async function renderCarousels() {

@@ -60,16 +60,21 @@
       "target": [
         "nsis",
         "portable"
-      ]
+      ],
+      "publisherName": "Henrique Bezerra (Open Trainer Engine)",
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Open Trainer Engine",
       "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico"
+      "uninstallerIcon": "assets/icon.ico",
+      "runAfterFinish": true
     }
   },
   "dependencies": {

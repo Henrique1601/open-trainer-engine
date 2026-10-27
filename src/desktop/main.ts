@@ -422,3 +422,32 @@ ipcMain.handle('profiles:apply', async (_event, gameId, profileId) => {
 ipcMain.handle('profiles:delete', async (_event, gameId, profileId) => {
   return ProfileManager.deleteProfile(gameId, profileId);
 });
+
+
+// ==============================================================================
+// In-App Auto-Update (Download & Silent Install)
+// ==============================================================================
+let downloadedInstallerPath = '';
+
+ipcMain.handle('updater:download-update', async (_event, downloadUrl: string, fileName?: string) => {
+  const safeName = fileName || 'OpenTrainerEngine-Update.exe';
+  const tempDir = path.join(app.getPath('temp'), 'OpenTrainerEngineUpdates');
+  downloadedInstallerPath = path.join(tempDir, safeName);
+
+  try {
+    await AppUpdater.downloadUpdate(downloadUrl, downloadedInstallerPath, (prog) => {
+      mainWindow?.webContents.send('updater:progress', prog);
+    });
+    return { success: true, path: downloadedInstallerPath };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updater:install-and-restart', async (_event, silent: boolean = true) => {
+  if (!downloadedInstallerPath || !fs.existsSync(downloadedInstallerPath)) {
+    throw new Error('Nenhum instalador baixado para executar.');
+  }
+  AppUpdater.installAndRestart(downloadedInstallerPath, silent);
+  return { success: true };
+});
