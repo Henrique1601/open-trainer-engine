@@ -500,6 +500,102 @@
     .hex-addr { color: #818cf8; font-weight: 600; }
     .hex-bytes { color: #38bdf8; word-spacing: 4px; }
     .hex-ascii { color: #3fb950; }
+  
+    /* WeMod Style Additions */
+    .cheat-category-group {
+      margin-bottom: 24px;
+      background: rgba(22, 28, 38, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .cheat-category-header {
+      background: rgba(15, 19, 26, 0.85);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .cheat-value-slider-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 0;
+    }
+    .cheat-range-input {
+      -webkit-appearance: none;
+      width: 140px;
+      height: 6px;
+      background: #30363d;
+      border-radius: 4px;
+      outline: none;
+    }
+    .cheat-range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+    .cheat-value-badge {
+      font-family: monospace;
+      font-size: 12px;
+      background: #0b0e14;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #7ee787;
+      min-width: 48px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .profiles-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin-bottom: 20px;
+    }
+    .profile-select {
+      background: #0b0e14;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+    }
+    .launch-game-btn {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: none;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s ease;
+    }
+    .launch-game-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+    }
+
   </style>
 </head>
 <body>
@@ -652,7 +748,30 @@
             </div>
           </div>
         </div>
-        <button class="play-btn" id="detail-play-btn" onclick="toggleAttach()">JOGAR COM TRAINER</button>
+        
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="launch-game-btn" id="launch-auto-btn" onclick="launchCurrentGame()">
+            <span>▶</span> JOGAR (AUTO-LAUNCH)
+          </button>
+          <button class="play-btn" id="detail-play-btn" onclick="toggleAttach()">ANEXAR TRAINER</button>
+        </div>
+
+      </div>
+
+      
+      <!-- Barra de Perfis de Cheats (WeMod Presets) -->
+      <div class="profiles-bar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 16px;">📁</span>
+          <span style="font-weight: 700; font-size: 13.5px;">Perfil de Mods:</span>
+          <select id="profile-dropdown" class="profile-select" onchange="onSelectProfile(this.value)">
+            <option value="">Padrão (Sem Perfil)</option>
+          </select>
+          <button class="speed-preset-btn" onclick="promptNewProfile()">+ Novo Perfil</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="speed-preset-btn" style="color: #f85149; border-color: rgba(248,81,73,0.3);" onclick="deleteCurrentProfile()">Excluir Perfil</button>
+        </div>
       </div>
 
       <!-- Painel Speedhack Nativo WeMod Style -->
@@ -942,7 +1061,237 @@
       popularContainer.innerHTML = popHtml;
     }
 
+    
+    // ==============================================================================
+    // WeMod Audio Feedback (Voz Sintética & Beeps Realistas)
+    // ==============================================================================
+    function speakWeModFeedback(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.1;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.8;
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('David')) || voices.find(v => v.lang.startsWith('en'));
+        if (enVoice) utterance.voice = enVoice;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // ==============================================================================
+    // WeMod Auto-Launch 1-Click
+    // ==============================================================================
+    async function launchCurrentGame() {
+      if (!selectedGame) return;
+      const detected = installedGames.find(g => 
+        (selectedGame.processName && g.executableName?.toLowerCase() === selectedGame.processName.toLowerCase()) ||
+        g.title.toLowerCase().includes(selectedGame.title.toLowerCase())
+      );
+
+      const targetGame = detected || {
+        id: selectedGame.id,
+        title: selectedGame.title,
+        platform: 'standalone',
+        installPath: '.',
+        executableName: selectedGame.processName
+      };
+
+      const btn = document.getElementById('launch-auto-btn');
+      btn.innerHTML = '<span>⏳</span> INICIANDO JOGO...';
+      speakWeModFeedback('Launching game, please wait');
+
+      try {
+        const res = await ipcRenderer.invoke('game:launch', targetGame);
+        if (res.success) {
+          btn.innerHTML = '<span>✓</span> JOGO INICIADO';
+          // Aguarda 3 segundos e anexa automaticamente
+          setTimeout(async () => {
+            btn.innerHTML = '<span>⚡</span> ANEXANDO MODS...';
+            const attachRes = await ipcRenderer.invoke('attach-trainer', selectedGame);
+            if (attachRes.success) {
+              isAttached = true;
+              document.getElementById('detail-play-btn').innerText = 'DESCONECTAR';
+              document.getElementById('detail-play-btn').classList.add('active');
+              document.getElementById('footer-status').innerText = 'Jogando: ' + selectedGame.title;
+              speakWeModFeedback('Trainer activated. Enjoy the game!');
+              btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
+            } else {
+              btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
+            }
+          }, 3500);
+        } else {
+          alert(res.message);
+          btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
+        }
+      } catch (err) {
+        alert('Erro ao iniciar jogo: ' + err.message);
+        btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
+      }
+    }
+
+    // ==============================================================================
+    // WeMod Cheat Profiles (Presets)
+    // ==============================================================================
+    let currentProfiles = [];
+    async function loadGameProfiles(gameId) {
+      try {
+        const data = await ipcRenderer.invoke('profiles:get', gameId);
+        currentProfiles = data.profiles || [];
+        const dropdown = document.getElementById('profile-dropdown');
+        if (!dropdown) return;
+        dropdown.innerHTML = '<option value="">Padrão (Sem Perfil)</option>' + currentProfiles.map(p => 
+          '<option value="' + p.id + '" ' + (p.id === data.activeProfileId ? 'selected' : '') + '>' + p.name + '</option>'
+        ).join('');
+      } catch (err) {
+        console.warn('Erro ao carregar perfis:', err);
+      }
+    }
+
+    async function promptNewProfile() {
+      if (!selectedGame) return;
+      const name = prompt('Nome do novo perfil de mods (ex: God Mode Build, Stealth Speedrun):');
+      if (!name || !name.trim()) return;
+
+      const states = {};
+      selectedGame.cheats.forEach(c => {
+        const chk = document.getElementById('toggle-' + c.id);
+        const slider = document.getElementById('slider-' + c.id);
+        if (chk || slider) {
+          states[c.id] = {
+            enabled: chk ? chk.checked : false,
+            value: slider ? Number(slider.value) : undefined
+          };
+        }
+      });
+
+      const newProf = await ipcRenderer.invoke('profiles:create', selectedGame.id, name.trim(), states);
+      await loadGameProfiles(selectedGame.id);
+      document.getElementById('profile-dropdown').value = newProf.id;
+      speakWeModFeedback('Profile saved');
+    }
+
+    async function onSelectProfile(profileId) {
+      if (!selectedGame || !profileId) return;
+      const prof = await ipcRenderer.invoke('profiles:apply', selectedGame.id, profileId);
+      if (prof && prof.states) {
+        for (const [cheatId, st] of Object.entries(prof.states)) {
+          const chk = document.getElementById('toggle-' + cheatId);
+          if (chk) chk.checked = st.enabled;
+          const sld = document.getElementById('slider-' + cheatId);
+          if (sld && st.value !== undefined) {
+            sld.value = st.value;
+            const badge = document.getElementById('badge-' + cheatId);
+            if (badge) badge.innerText = st.value;
+          }
+        }
+        speakWeModFeedback('Profile loaded: ' + prof.name);
+      }
+    }
+
+    async function deleteCurrentProfile() {
+      if (!selectedGame) return;
+      const dropdown = document.getElementById('profile-dropdown');
+      const profileId = dropdown.value;
+      if (!profileId) {
+        alert('Selecione um perfil para excluir.');
+        return;
+      }
+      if (confirm('Tem certeza que deseja excluir este perfil?')) {
+        await ipcRenderer.invoke('profiles:delete', selectedGame.id, profileId);
+        await loadGameProfiles(selectedGame.id);
+        speakWeModFeedback('Profile deleted');
+      }
+    }
+
+    function onCheatSliderChange(cheatId, val) {
+      const badge = document.getElementById('badge-' + cheatId);
+      if (badge) badge.innerText = val;
+      playBeep(700 + Number(val) * 10, 0.05);
+    }
+
+    
     async function openGameTrainer(trainerId) {
+      const t = allTrainers.find(x => x.id === trainerId);
+      if (!t) return;
+      selectedGame = t;
+
+      document.getElementById('detail-title').innerText = t.title;
+      document.getElementById('detail-process').innerText = 'Alvo: ' + t.processName + ' • Versão: ' + t.version;
+      document.getElementById('detail-cheat-count').innerText = t.cheats.length;
+
+      // Carrega perfis salvos do jogo
+      await loadGameProfiles(t.id);
+
+      // Obtém dados persistentes (tempo jogado e mods favoritados/salvos)
+      const data = await ipcRenderer.invoke('get-game-stats', t.id);
+      document.getElementById('detail-playtime').innerText = 'Tempo com mods: ' + data.formattedPlaytime;
+      document.getElementById('detail-fav-btn').className = 'fav-btn ' + (data.isFavorite ? 'active' : '');
+
+      // Checagem de Segurança Anti-Cheat Safe Guard
+      try {
+        const ac = await ipcRenderer.invoke('security:check-anti-cheat');
+        const badge = document.getElementById('anti-cheat-status-badge');
+        if (badge) {
+          if (ac.detected) {
+            badge.style.background = 'rgba(248, 81, 73, 0.2)';
+            badge.style.color = '#f85149';
+            badge.style.borderColor = '#f85149';
+            badge.innerHTML = '<span>⚠️</span> Anti-Cheat Detectado: ' + ac.matches.map(m => m.antiCheat.name).join(', ');
+          } else {
+            badge.style.background = 'rgba(63, 185, 80, 0.15)';
+            badge.style.color = '#3fb950';
+            badge.style.borderColor = 'rgba(63, 185, 80, 0.35)';
+            badge.innerHTML = '<span>🛡️</span> Safe Guard: Protegido';
+          }
+        }
+      } catch {}
+
+      // Agrupamento por Categoria estilo WeMod (Player, Inventory, Physics, Weapons, etc)
+      const categories = {};
+      for (const c of t.cheats) {
+        const cat = c.category || 'Geral';
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push(c);
+      }
+
+      let cheatsHtml = '';
+      for (const [catName, catCheats] of Object.entries(categories)) {
+        cheatsHtml += '<div class="cheat-category-group">';
+        cheatsHtml += '  <div class="cheat-category-header"><span>📁 ' + catName + '</span><span>' + catCheats.length + ' mods</span></div>';
+        
+        for (const c of catCheats) {
+          const isSaved = data.savedMods[c.id]?.enabled || false;
+          const isValueType = c.type === 'value';
+          cheatsHtml += '  <div class="cheat-row">';
+          cheatsHtml += '    <div>';
+          cheatsHtml += '      <div class="cheat-name">' + c.name + '</div>';
+          cheatsHtml += '      <div class="cheat-tags">';
+          if (c.hotkey) cheatsHtml += '        <span class="hotkey-badge">' + c.hotkey + '</span>';
+          cheatsHtml += '        <span>' + c.category + ' • ' + c.type + '</span>';
+          cheatsHtml += '      </div>';
+          cheatsHtml += '    </div>';
+          cheatsHtml += '    <div style="display: flex; align-items: center; gap: 14px;">';
+          if (isValueType) {
+            cheatsHtml += '      <div class="cheat-value-slider-box">';
+            cheatsHtml += '        <input type="range" class="cheat-range-input" id="slider-' + c.id + '" min="1" max="100" value="10" oninput="onCheatSliderChange(\'' + c.id + '\', this.value)">';
+            cheatsHtml += '        <span class="cheat-value-badge" id="badge-' + c.id + '">10</span>';
+            cheatsHtml += '      </div>';
+          }
+          cheatsHtml += '      <label class="switch">';
+          cheatsHtml += '        <input type="checkbox" id="toggle-' + c.id + '" ' + (isSaved ? 'checked' : '') + ' onchange="toggleCheatAction(\'' + c.id + '\', this.checked)">';
+          cheatsHtml += '        <span class="slider"></span>';
+          cheatsHtml += '      </label>';
+          cheatsHtml += '    </div>';
+          cheatsHtml += '  </div>';
+        }
+        cheatsHtml += '</div>';
+      }
+      document.getElementById('detail-cheats-container').innerHTML = cheatsHtml;
+
+      switchTab('tab-game-details');
+    }
+
       const t = allTrainers.find(x => x.id === trainerId);
       if (!t) return;
       selectedGame = t;

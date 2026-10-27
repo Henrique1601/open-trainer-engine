@@ -16,6 +16,8 @@ import { SpeedhackEngine } from '../core/memory/speedhack.js';
 import { CloudTrainerHub, CloudTrainerEntry } from '../core/cloud/cloud-trainer-hub.js';
 import { HexViewer } from '../core/studio/hex-viewer.js';
 import { AntiCheatDetector } from '../core/security/anti-cheat-detector.js';
+import { ProfileManager } from '../core/storage/profile-manager.js';
+import { GameLauncher } from '../core/scanner/game-launcher.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -378,4 +380,45 @@ ipcMain.handle('studio:hex-dump', async (_event, hexBytes: string, baseAddressSt
   const dump = HexViewer.formatHexDump(buf, baseAddr);
   const disasm = HexViewer.disassembleQuick(buf);
   return { dump, disasm };
+});
+
+
+// ==============================================================================
+// WeMod 1-Click Auto Play & Game Launcher
+// ==============================================================================
+ipcMain.handle('game:launch', async (_event, game) => {
+  return GameLauncher.launch(game);
+});
+
+// ==============================================================================
+// WeMod Cheat Profiles (Presets por Jogo / Save)
+// ==============================================================================
+ipcMain.handle('profiles:get', async (_event, gameId) => {
+  return {
+    profiles: ProfileManager.getProfiles(gameId),
+    activeProfileId: ProfileManager.getActiveProfileId(gameId)
+  };
+});
+
+ipcMain.handle('profiles:create', async (_event, gameId, name, states) => {
+  return ProfileManager.createProfile(gameId, name, states);
+});
+
+ipcMain.handle('profiles:apply', async (_event, gameId, profileId) => {
+  const profile = ProfileManager.applyProfile(gameId, profileId);
+  if (profile && activeSession) {
+    for (const [cheatId, st] of Object.entries(profile.states)) {
+      try {
+        activeSession.toggleCheat(cheatId, st.enabled);
+      } catch {}
+    }
+    syncRemoteServerState();
+    mainWindow?.webContents.send('profile-applied', profile);
+    overlayWindow?.webContents.send('profile-applied', profile);
+  }
+  return profile;
+});
+
+ipcMain.handle('profiles:delete', async (_event, gameId, profileId) => {
+  return ProfileManager.deleteProfile(gameId, profileId);
 });
