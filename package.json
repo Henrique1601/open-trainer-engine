@@ -60,10 +60,7 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "publisherName": "Henrique Bezerra (Open Trainer Engine)",
-      "verifyUpdateCodeSignature": false,
-      "requestedExecutionLevel": "asInvoker"
+      ]
     },
     "nsis": {
       "oneClick": true,
