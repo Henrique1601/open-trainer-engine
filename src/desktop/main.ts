@@ -302,6 +302,10 @@ ipcMain.handle('toggle-favorite', async (_event, gameId) => {
   return PreferencesStore.toggleFavorite(gameId);
 });
 
+ipcMain.handle('app:get-version', async () => {
+  return app.getVersion() || AppUpdater.getCurrentVersion();
+});
+
 ipcMain.handle('get-preferences', async () => {
   return PreferencesStore.get();
 });

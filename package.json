@@ -1,6 +1,6 @@
 {
   "name": "open-trainer-engine",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Next-generation single-player game trainer engine, community mod hub, and in-game HUD overlay system.",
   "type": "module",
   "main": "dist/desktop/main.js",

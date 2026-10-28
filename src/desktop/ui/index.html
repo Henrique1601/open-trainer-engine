@@ -621,7 +621,7 @@
       <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
       <div class="brand-text">
         <h1>Open Trainer</h1>
-        <span id="engine-version-label">Engine v0.3.0</span>
+        <span id="engine-version-label">Engine v0.4.1</span>
       </div>
     </div>
 
@@ -960,6 +960,11 @@
     }
 
     async function init() {
+      try {
+        const ver = await ipcRenderer.invoke('app:get-version');
+        const verLabel = document.getElementById('engine-version-label');
+        if (verLabel && ver) verLabel.innerText = 'Engine v' + ver;
+      } catch {}
       // 1. Checa por atualizações do App no GitHub
       checkForUpdates();
 
@@ -1042,7 +1047,6 @@
         btn.disabled = false;
         btn.innerText = 'Tentar Novamente';
       }
-    }
     }
 
     async function renderCarousels() {
@@ -1275,85 +1279,6 @@
 
     
     async function openGameTrainer(trainerId) {
-      const t = allTrainers.find(x => x.id === trainerId);
-      if (!t) return;
-      selectedGame = t;
-
-      document.getElementById('detail-title').innerText = t.title;
-      document.getElementById('detail-process').innerText = 'Alvo: ' + t.processName + ' • Versão: ' + t.version;
-      document.getElementById('detail-cheat-count').innerText = t.cheats.length;
-
-      // Carrega perfis salvos do jogo
-      await loadGameProfiles(t.id);
-
-      // Obtém dados persistentes (tempo jogado e mods favoritados/salvos)
-      const data = await ipcRenderer.invoke('get-game-stats', t.id);
-      document.getElementById('detail-playtime').innerText = 'Tempo com mods: ' + data.formattedPlaytime;
-      document.getElementById('detail-fav-btn').className = 'fav-btn ' + (data.isFavorite ? 'active' : '');
-
-      // Checagem de Segurança Anti-Cheat Safe Guard
-      try {
-        const ac = await ipcRenderer.invoke('security:check-anti-cheat');
-        const badge = document.getElementById('anti-cheat-status-badge');
-        if (badge) {
-          if (ac.detected) {
-            badge.style.background = 'rgba(248, 81, 73, 0.2)';
-            badge.style.color = '#f85149';
-            badge.style.borderColor = '#f85149';
-            badge.innerHTML = '<span>⚠️</span> Anti-Cheat Detectado: ' + ac.matches.map(m => m.antiCheat.name).join(', ');
-          } else {
-            badge.style.background = 'rgba(63, 185, 80, 0.15)';
-            badge.style.color = '#3fb950';
-            badge.style.borderColor = 'rgba(63, 185, 80, 0.35)';
-            badge.innerHTML = '<span>🛡️</span> Safe Guard: Protegido';
-          }
-        }
-      } catch {}
-
-      // Agrupamento por Categoria estilo WeMod (Player, Inventory, Physics, Weapons, etc)
-      const categories = {};
-      for (const c of t.cheats) {
-        const cat = c.category || 'Geral';
-        if (!categories[cat]) categories[cat] = [];
-        categories[cat].push(c);
-      }
-
-      let cheatsHtml = '';
-      for (const [catName, catCheats] of Object.entries(categories)) {
-        cheatsHtml += '<div class="cheat-category-group">';
-        cheatsHtml += '  <div class="cheat-category-header"><span>📁 ' + catName + '</span><span>' + catCheats.length + ' mods</span></div>';
-        
-        for (const c of catCheats) {
-          const isSaved = data.savedMods[c.id]?.enabled || false;
-          const isValueType = c.type === 'value';
-          cheatsHtml += '  <div class="cheat-row">';
-          cheatsHtml += '    <div>';
-          cheatsHtml += '      <div class="cheat-name">' + c.name + '</div>';
-          cheatsHtml += '      <div class="cheat-tags">';
-          if (c.hotkey) cheatsHtml += '        <span class="hotkey-badge">' + c.hotkey + '</span>';
-          cheatsHtml += '        <span>' + c.category + ' • ' + c.type + '</span>';
-          cheatsHtml += '      </div>';
-          cheatsHtml += '    </div>';
-          cheatsHtml += '    <div style="display: flex; align-items: center; gap: 14px;">';
-          if (isValueType) {
-            cheatsHtml += '      <div class="cheat-value-slider-box">';
-            cheatsHtml += '        <input type="range" class="cheat-range-input" id="slider-' + c.id + '" min="1" max="100" value="10" oninput="onCheatSliderChange(\'' + c.id + '\', this.value)">';
-            cheatsHtml += '        <span class="cheat-value-badge" id="badge-' + c.id + '">10</span>';
-            cheatsHtml += '      </div>';
-          }
-          cheatsHtml += '      <label class="switch">';
-          cheatsHtml += '        <input type="checkbox" id="toggle-' + c.id + '" ' + (isSaved ? 'checked' : '') + ' onchange="toggleCheatAction(\'' + c.id + '\', this.checked)">';
-          cheatsHtml += '        <span class="slider"></span>';
-          cheatsHtml += '      </label>';
-          cheatsHtml += '    </div>';
-          cheatsHtml += '  </div>';
-        }
-        cheatsHtml += '</div>';
-      }
-      document.getElementById('detail-cheats-container').innerHTML = cheatsHtml;
-
-      switchTab('tab-game-details');
-    }
 
       const t = allTrainers.find(x => x.id === trainerId);
       if (!t) return;
