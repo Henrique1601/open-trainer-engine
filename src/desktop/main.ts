@@ -21,6 +21,7 @@ import { GameLauncher } from '../core/scanner/game-launcher.js';
 import { GameProcessPauser } from '../core/memory/process-pauser.js';
 import { GameScreenshotCapture } from '../core/captures/screenshot-capture.js';
 import { GameArtResolver } from '../core/scanner/game-art-resolver.js';
+import { DefaultCheatsProvider } from '../core/trainer/default-cheats-provider.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -274,14 +275,21 @@ ipcMain.handle('attach-trainer', async (_event, contract) => {
   }
 });
 
-ipcMain.handle('toggle-cheat', async (_event, cheatId, forceState) => {
-  if (!activeSession) {
-    throw new Error('Nenhum trainer ativo no momento.');
+ipcMain.handle('toggle-cheat', async (_event, cheatId, forceState, gameId) => {
+  const gId = gameId || activeGameId || 'active-game';
+  let newState = false;
+  if (activeSession) {
+    try {
+      newState = activeSession.toggleCheat(cheatId, forceState);
+    } catch {
+      const saved = PreferencesStore.getSavedCheatStates(gId);
+      newState = forceState !== undefined ? forceState : !(saved[cheatId]?.enabled);
+    }
+  } else {
+    const saved = PreferencesStore.getSavedCheatStates(gId);
+    newState = forceState !== undefined ? forceState : !(saved[cheatId]?.enabled);
   }
-  const newState = activeSession.toggleCheat(cheatId, forceState);
-  if (activeGameId) {
-    PreferencesStore.saveCheatState(activeGameId, cheatId, newState);
-  }
+  PreferencesStore.saveCheatState(gId, cheatId, newState);
   syncRemoteServerState();
   return { cheatId, enabled: newState };
 });
@@ -360,14 +368,71 @@ ipcMain.handle('remote:get-info', async () => {
 // ==============================================================================
 // Speedhack Nativo (Controle de Velocidade / Bullet-Time)
 // ==============================================================================
-ipcMain.handle('speedhack:set', async (_event, multiplier) => {
-  if (multiplier === 1.0) {
-    speedhack.disable();
-  } else {
-    speedhack.enable();
-    speedhack.setSpeed(multiplier);
+ipcMain.handle('speedhack:set', async (_event, multiplier, targetPid, processName) => {
+  let pid = targetPid || null;
+  if (!pid && activeSession) {
+    pid = (activeSession as any).getProcessInfo?.()?.pid || (activeSession as any).processInfo?.pid || null;
   }
-  return speedhack.getState();
+  if (!pid && processName) {
+    try {
+      const detected = ProcessManager.findProcessByName(processName);
+      if (detected) pid = detected.pid;
+    } catch {}
+  }
+  const result = speedhack.applyToProcess(pid, multiplier);
+  mainWindow?.webContents.send('speedhack:status', result);
+  overlayWindow?.webContents.send('speedhack:status', result);
+  return result;
+});
+
+// ==============================================================================
+// Catálogo Rico de Cheats & Cheats Customizados
+// ==============================================================================
+ipcMain.handle('trainer:get-cheats', async (_event, gameId: string, title: string, processName?: string) => {
+  const defaults = DefaultCheatsProvider.getCheatsForGame(title || gameId, processName);
+  const staticTrainers = TrainerLoader.scanTrainersDirectory(path.resolve('configs/trainers'));
+  const staticTrainer = staticTrainers.find((t: any) =>
+    t.id === gameId ||
+    (processName && t.processName.toLowerCase() === processName.toLowerCase()) ||
+    t.title.toLowerCase().includes((title || '').toLowerCase())
+  );
+
+  const customCheats = PreferencesStore.getCustomCheats(gameId);
+
+  const cheatMap = new Map<string, any>();
+  for (const c of defaults) cheatMap.set(c.id, c);
+  if (staticTrainer) {
+    for (const c of staticTrainer.cheats) cheatMap.set(c.id, c);
+  }
+  for (const c of customCheats) cheatMap.set(c.id, c);
+
+  return Array.from(cheatMap.values());
+});
+
+ipcMain.handle('custom-cheats:get', async (_event, gameId: string) => {
+  return PreferencesStore.getCustomCheats(gameId);
+});
+
+ipcMain.handle('custom-cheats:add', async (_event, gameId: string, cheat: any) => {
+  return PreferencesStore.addCustomCheat(gameId, cheat);
+});
+
+ipcMain.handle('custom-cheats:delete', async (_event, gameId: string, cheatId: string) => {
+  return PreferencesStore.deleteCustomCheat(gameId, cheatId);
+});
+
+// ==============================================================================
+// Temas Visuais (WeMod, Cyberpunk, Obsidian, Crimson, Frost)
+// ==============================================================================
+ipcMain.handle('theme:get', async () => {
+  return PreferencesStore.getTheme();
+});
+
+ipcMain.handle('theme:set', async (_event, theme: string) => {
+  const applied = PreferencesStore.setTheme(theme);
+  mainWindow?.webContents.send('theme:changed', applied);
+  overlayWindow?.webContents.send('theme:changed', applied);
+  return applied;
 });
 
 ipcMain.handle('speedhack:get', async () => {

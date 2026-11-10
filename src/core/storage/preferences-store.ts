@@ -12,6 +12,8 @@ export interface GamePreferences {
   modStates: Record<string, Record<string, { enabled: boolean; value?: any }>>; // Estado salvo dos cheats por jogo
   playtime: Record<string, GamePlaytimeStats>; // Estatísticas precisas de horas de mods
   autoRestoreMods: boolean; // Se deve restaurar automaticamente os mods ao abrir o jogo
+  theme?: string; // Tema visual: 'wemod' | 'cyberpunk' | 'obsidian' | 'crimson' | 'frost'
+  customCheats?: Record<string, any[]>; // Cheats criados pelo usuário no próprio launcher
 }
 
 export class PreferencesStore {
@@ -25,7 +27,9 @@ export class PreferencesStore {
     favorites: [],
     modStates: {},
     playtime: {},
-    autoRestoreMods: true
+    autoRestoreMods: true,
+    theme: 'wemod',
+    customCheats: {}
   };
 
   private static initialized = false;
@@ -153,5 +157,64 @@ export class PreferencesStore {
       return `${minutes}m`;
     }
     return `${hours}h ${minutes}m`;
+  }
+
+  // ============================================================================
+  // Temas Visuais (WeMod, Cyberpunk, Obsidian, Crimson, Frost)
+  // ============================================================================
+  public static getTheme(): string {
+    this.ensureInitialized();
+    return this.currentData.theme || 'wemod';
+  }
+
+  public static setTheme(theme: string): string {
+    this.ensureInitialized();
+    this.currentData.theme = theme;
+    this.save();
+    return this.currentData.theme;
+  }
+
+  // ============================================================================
+  // Cheats Customizados Criados no Launcher
+  // ============================================================================
+  public static getCustomCheats(gameId: string): any[] {
+    this.ensureInitialized();
+    if (!this.currentData.customCheats) {
+      this.currentData.customCheats = {};
+    }
+    return this.currentData.customCheats[gameId] || [];
+  }
+
+  public static addCustomCheat(gameId: string, cheat: any): any[] {
+    this.ensureInitialized();
+    if (!this.currentData.customCheats) {
+      this.currentData.customCheats = {};
+    }
+    if (!this.currentData.customCheats[gameId]) {
+      this.currentData.customCheats[gameId] = [];
+    }
+
+    // Se já existir com o mesmo id, atualiza
+    const idx = this.currentData.customCheats[gameId].findIndex(c => c.id === cheat.id);
+    if (idx >= 0) {
+      this.currentData.customCheats[gameId][idx] = cheat;
+    } else {
+      this.currentData.customCheats[gameId].push(cheat);
+    }
+
+    this.save();
+    return this.currentData.customCheats[gameId];
+  }
+
+  public static deleteCustomCheat(gameId: string, cheatId: string): any[] {
+    this.ensureInitialized();
+    if (!this.currentData.customCheats || !this.currentData.customCheats[gameId]) {
+      return [];
+    }
+    this.currentData.customCheats[gameId] = this.currentData.customCheats[gameId].filter(
+      c => c.id !== cheatId
+    );
+    this.save();
+    return this.currentData.customCheats[gameId];
   }
 }

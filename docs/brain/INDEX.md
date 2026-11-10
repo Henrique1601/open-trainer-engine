@@ -11,11 +11,12 @@ Bem-vindo ao Segundo Cérebro do **Open Trainer Engine**. Esta base de conhecime
 ---
 
 ## 🚀 Versão Atual em Produção
-- **Versão:** `v0.4.2`
-- **Release no GitHub:** [v0.4.2 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.4.2)
-- **Principais Recursos da v0.4.2:**
-  - Resolução de capas verticais oficiais (`library_600x900_2x.jpg`) via Steam CDN.
-  - Extração de ícones nativos de executáveis Windows (`.exe`) via `app.getFileIcon`.
-  - Correção na abertura de qualquer jogo instalado ao clicar nos cards.
-  - Pipeline GitHub Actions para build de instaladores NSIS e executáveis portáteis.
-  - In-App Auto-Updater com download direto sem redirecionamento para o navegador.
+- **Versão:** `v0.5.0`
+- **Release no GitHub:** [v0.5.0 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.5.0)
+- **Principais Recursos da v0.5.0:**
+  - **Motion 3D & Microinterações:** Tilt interativo nos cards e painéis com reflexo especular de luz.
+  - **Sistema Multitemas:** 5 temas visuais alternáveis com 1 clique (WeMod Dark Emerald, Cyberpunk 2077 Neon, Obsidian Void, Crimson ROG, Arctic Titanium).
+  - **Arsenal Completo de Cheats:** Modo Deus, Aimbot Suave, Munição Infinita, Dinheiro Ilimitado, XP Multiplicador, Teleporte Waypoint e No-Clip disponíveis para qualquer jogo.
+  - **Criação de Cheats no Launcher:** Modal 3D Glass para criar e salvar novos cheats diretamente pela interface sem tocar em código.
+  - **Speedhack Real no Processo:** Micro-pulsos de ciclo de trabalho (Bullet-time 0.2x/0.5x) e prioridade de processo Win32 (Turbo 2x/5x).
+  - **In-App Auto-Updater Integrado:** Download e instalação com barra de progresso nativa sem redirecionamento para o navegador.

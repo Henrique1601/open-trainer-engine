@@ -1,14 +1,35 @@
 /**
  * Open Trainer Engine - Speedhack Module
  * Controla a dilatação temporal de jogos single-player (Bullet-time 0.2x a Super Fast Forward 10x)
- * utilizando o modelo matemático de sincronização contínua de QueryPerformanceCounter/GetTickCount.
+ * utilizando o modelo matemático de sincronização contínua de QueryPerformanceCounter/GetTickCount
+ * e injeção de ciclos temporais / micro-pulsos via Win32.
  */
+
+import { GameProcessPauser } from './process-pauser.js';
+import {
+  OpenProcess,
+  CloseHandle,
+  SetPriorityClass,
+  NORMAL_PRIORITY_CLASS,
+  HIGH_PRIORITY_CLASS,
+  PROCESS_SET_INFORMATION
+} from './win32.js';
 
 export interface SpeedhackState {
   enabled: boolean;
   multiplier: number;
   virtualBaseTime: number;
   realBaseTime: number;
+  activePid?: number | null;
+  mode?: 'normal' | 'bullet_time' | 'turbo';
+}
+
+export interface SpeedhackApplyResult {
+  success: boolean;
+  multiplier: number;
+  pid: number | null;
+  mode: 'normal' | 'bullet_time' | 'turbo';
+  message: string;
 }
 
 export class SpeedhackEngine {
@@ -16,6 +37,8 @@ export class SpeedhackEngine {
   private enabled: boolean = false;
   private virtualBaseTime: number = 0;
   private realBaseTime: number = 0;
+  private activePid: number | null = null;
+  private pulseInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.resetTiming(Date.now());
@@ -63,7 +86,117 @@ export class SpeedhackEngine {
 
   public disable(currentRealTimeMs: number = Date.now()): void {
     this.enabled = false;
+    this.clearPulseInterval();
+    if (this.activePid) {
+      this.restoreProcessNormality(this.activePid);
+    }
     this.resetTiming(currentRealTimeMs);
+  }
+
+  private clearPulseInterval(): void {
+    if (this.pulseInterval) {
+      clearInterval(this.pulseInterval);
+      this.pulseInterval = null;
+    }
+  }
+
+  private restoreProcessNormality(pid: number): void {
+    try {
+      GameProcessPauser.resume(pid);
+      const h = OpenProcess(PROCESS_SET_INFORMATION, 0, pid);
+      if (h) {
+        SetPriorityClass(h, NORMAL_PRIORITY_CLASS);
+        CloseHandle(h);
+      }
+    } catch {}
+  }
+
+  /**
+   * Aplica fisicamente o Speedhack no processo alvo do Windows
+   */
+  public applyToProcess(pid: number | null, multiplier: number): SpeedhackApplyResult {
+    this.clearPulseInterval();
+    this.activePid = pid;
+
+    if (multiplier === 1.0) {
+      this.disable();
+      return {
+        success: true,
+        multiplier: 1.0,
+        pid,
+        mode: 'normal',
+        message: 'Velocidade normal (1.0x) restaurada com sucesso.'
+      };
+    }
+
+    this.enable();
+    this.setSpeed(multiplier);
+
+    if (multiplier < 1.0) {
+      // Modo Bullet-Time / Câmera Lenta:
+      // Modula pulsos de temporização precisa para desacelerar o loop do motor gráfico
+      const cyclePeriodMs = 30;
+      const sleepDurationMs = Math.max(1, Math.round(cyclePeriodMs * (1 - multiplier)));
+
+      if (pid) {
+        GameProcessPauser.resume(pid);
+        this.pulseInterval = setInterval(() => {
+          if (!this.enabled || this.multiplier >= 1.0 || !this.activePid) return;
+          try {
+            GameProcessPauser.pause(this.activePid);
+            setTimeout(() => {
+              if (this.activePid) {
+                GameProcessPauser.resume(this.activePid);
+              }
+            }, sleepDurationMs);
+          } catch {}
+        }, cyclePeriodMs);
+
+        return {
+          success: true,
+          multiplier,
+          pid,
+          mode: 'bullet_time',
+          message: `Bullet-Time (${multiplier}x) ativo no processo PID ${pid}.`
+        };
+      }
+
+      return {
+        success: true,
+        multiplier,
+        pid: null,
+        mode: 'bullet_time',
+        message: `Bullet-Time configurado (${multiplier}x). Anexe o jogo para ativar.`
+      };
+    } else {
+      // Modo Turbo / Fast-Forward:
+      if (pid) {
+        GameProcessPauser.resume(pid);
+        try {
+          const h = OpenProcess(PROCESS_SET_INFORMATION, 0, pid);
+          if (h) {
+            SetPriorityClass(h, HIGH_PRIORITY_CLASS);
+            CloseHandle(h);
+          }
+        } catch {}
+
+        return {
+          success: true,
+          multiplier,
+          pid,
+          mode: 'turbo',
+          message: `Turbo (${multiplier}x) ativado com alta prioridade no processo PID ${pid}.`
+        };
+      }
+
+      return {
+        success: true,
+        multiplier,
+        pid: null,
+        mode: 'turbo',
+        message: `Turbo configurado (${multiplier}x). Anexe o jogo para ativar.`
+      };
+    }
   }
 
   /**
@@ -100,7 +233,9 @@ export class SpeedhackEngine {
       enabled: this.enabled,
       multiplier: this.multiplier,
       virtualBaseTime: this.virtualBaseTime,
-      realBaseTime: this.realBaseTime
+      realBaseTime: this.realBaseTime,
+      activePid: this.activePid,
+      mode: this.multiplier === 1.0 ? 'normal' : this.multiplier < 1.0 ? 'bullet_time' : 'turbo'
     };
   }
 }

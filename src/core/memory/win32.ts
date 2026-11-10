@@ -104,5 +104,13 @@ export const Process32NextW = kernel32.func('int32 __stdcall Process32NextW(uint
 export const Module32FirstW = kernel32.func('int32 __stdcall Module32FirstW(uintptr hSnapshot, _Inout_ MODULEENTRY32W *lpme)');
 export const Module32NextW = kernel32.func('int32 __stdcall Module32NextW(uintptr hSnapshot, _Inout_ MODULEENTRY32W *lpme)');
 
+export const NORMAL_PRIORITY_CLASS = 0x00000020;
+export const IDLE_PRIORITY_CLASS = 0x00000040;
+export const HIGH_PRIORITY_CLASS = 0x00000080;
+export const REALTIME_PRIORITY_CLASS = 0x00000100;
+
+export const SetPriorityClass = kernel32.func('int32 __stdcall SetPriorityClass(uintptr hProcess, uint32 dwPriorityClass)');
+export const GetPriorityClass = kernel32.func('uint32 __stdcall GetPriorityClass(uintptr hProcess)');
+
 export const RegisterHotKey = user32.func('int32 __stdcall RegisterHotKey(uintptr hWnd, int32 id, uint32 fsModifiers, uint32 vk)');
 export const UnregisterHotKey = user32.func('int32 __stdcall UnregisterHotKey(uintptr hWnd, int32 id)');
