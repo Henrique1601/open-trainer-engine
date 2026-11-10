@@ -20,6 +20,7 @@ import { ProfileManager } from '../core/storage/profile-manager.js';
 import { GameLauncher } from '../core/scanner/game-launcher.js';
 import { GameProcessPauser } from '../core/memory/process-pauser.js';
 import { GameScreenshotCapture } from '../core/captures/screenshot-capture.js';
+import { GameArtResolver } from '../core/scanner/game-art-resolver.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -504,4 +505,21 @@ ipcMain.handle('game:capture-screenshot', async () => {
     overlayWindow?.webContents.send('screenshot-taken-event', res);
   }
   return res;
+});
+
+// ==============================================================================
+// Extração de Ícone Nativo de Executável (.exe) & Resolução de Capas Reais
+// ==============================================================================
+ipcMain.handle('app:get-file-icon', async (_event, filePath: string) => {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      const icon = await app.getFileIcon(filePath, { size: 'large' });
+      return icon.toDataURL();
+    }
+  } catch {}
+  return '';
+});
+
+ipcMain.handle('games:resolve-art', async (_event, game) => {
+  return GameArtResolver.resolveAndCacheArt(game);
 });

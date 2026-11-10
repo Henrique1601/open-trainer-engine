@@ -4,6 +4,7 @@ import { SteamScanner } from './steam-scanner.js';
 import { EpicScanner } from './epic-scanner.js';
 import { GogScanner } from './gog-scanner.js';
 import { XboxScanner } from './xbox-scanner.js';
+import { GameArtResolver } from './game-art-resolver.js';
 
 export type GamePlatform = 'steam' | 'epic' | 'gog' | 'xbox' | 'standalone';
 
@@ -14,6 +15,9 @@ export interface DetectedGame {
   installPath: string;
   executableName?: string;
   versionOrBuild?: string;
+  coverImage?: string;
+  heroImage?: string;
+  iconUrl?: string;
 }
 
 export class GameDetector {
@@ -125,7 +129,8 @@ export class GameDetector {
       console.warn('Erro ao varrer Xbox Game Pass:', err);
     }
 
-    return detected;
+    // Enriquece todos os jogos com capas oficiais e banners da Steam CDN e plataformas
+    return GameArtResolver.enrichAll(detected);
   }
 
   /**
