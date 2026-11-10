@@ -1133,7 +1133,19 @@
       <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
       <div class="brand-text">
         <h1>Open Trainer</h1>
-        <span id="engine-version-label">Engine v0.5.0</span>
+        <span id="engine-version-label">Engine v0.5.1</span>
+      </div>
+    </div>
+
+    <!-- Seletor de Temas Visuais (Multitemas 1-Click) -->
+    <div class="theme-selector-box">
+      <span class="theme-label">🎨 Tema Visual:</span>
+      <div class="theme-pills">
+        <div class="theme-pill wemod active" onclick="applyAppTheme('wemod')" title="WeMod Emerald (Padrão)"></div>
+        <div class="theme-pill cyberpunk" onclick="applyAppTheme('cyberpunk')" title="Cyberpunk 2077 Neon"></div>
+        <div class="theme-pill obsidian" onclick="applyAppTheme('obsidian')" title="Obsidian Void"></div>
+        <div class="theme-pill crimson" onclick="applyAppTheme('crimson')" title="Crimson Gamer ROG"></div>
+        <div class="theme-pill frost" onclick="applyAppTheme('frost')" title="Arctic Titanium"></div>
       </div>
     </div>
 
@@ -1318,6 +1330,24 @@
       </div>
 
       <div class="section-title">Cheats e Modificações (<span id="detail-cheat-count">0</span>)</div>
+
+      <!-- Toolbar de Busca, Filtro e Criação de Cheats -->
+      <div class="cheats-action-toolbar">
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1; flex-wrap: wrap;">
+          <input type="text" id="cheat-search-input" class="cheat-search-box" placeholder="🔍 Filtrar mods (ex: vida, mira, ouro, teleport)..." oninput="filterCheatsInView(this.value)" />
+          <div class="cheat-category-chips">
+            <button class="category-chip active" onclick="filterByCategory('all', this)">Todos</button>
+            <button class="category-chip" onclick="filterByCategory('Jogador', this)">🛡️ Jogador</button>
+            <button class="category-chip" onclick="filterByCategory('Combate', this)">🎯 Combate</button>
+            <button class="category-chip" onclick="filterByCategory('Economia', this)">💰 Economia</button>
+            <button class="category-chip" onclick="filterByCategory('Teletransporte', this)">📍 Teleport</button>
+            <button class="category-chip" onclick="filterByCategory('Física', this)">⚡ Física</button>
+          </div>
+        </div>
+        <button class="create-cheat-launcher-btn" onclick="openNewCheatModal()">
+          <span>➕</span> CRIAR NOVO CHEAT
+        </button>
+      </div>
       <div id="detail-cheats-container">
         <!-- Cheats do Jogo Injetados -->
       </div>
@@ -1901,10 +1931,11 @@
       return openGameById(trainerId);
     }
 
+    let selectedGameSavedMods = {};
+
     async function displaySelectedGameDetails(selectedGame, trainer, game) {
       document.getElementById('detail-title').innerText = selectedGame.title;
       document.getElementById('detail-process').innerText = 'Alvo: ' + selectedGame.processName + ' • Plataforma: ' + selectedGame.platform.toUpperCase() + ' • Versão: ' + selectedGame.version;
-      document.getElementById('detail-cheat-count').innerText = selectedGame.cheats.length;
 
       // Atualiza o Badge da Plataforma
       const badgeEl = document.getElementById('detail-platform-badge');
@@ -1950,6 +1981,7 @@
 
       // Obtém dados persistentes (tempo jogado e mods favoritados/salvos)
       const data = await ipcRenderer.invoke('get-game-stats', selectedGame.id);
+      selectedGameSavedMods = data.savedMods || {};
       document.getElementById('detail-playtime').innerText = 'Tempo com mods: ' + data.formattedPlaytime;
       document.getElementById('detail-fav-btn').className = 'fav-btn ' + (data.isFavorite ? 'active' : '');
 
@@ -1972,65 +2004,8 @@
         }
       } catch {}
 
-      // Se tiver cheats configurados, renderiza por categoria
-      if (selectedGame.cheats && selectedGame.cheats.length > 0) {
-        const categories = {};
-        for (const c of selectedGame.cheats) {
-          const cat = c.category || 'Geral';
-          if (!categories[cat]) categories[cat] = [];
-          categories[cat].push(c);
-        }
-
-        let cheatsHtml = '';
-        for (const [catName, catCheats] of Object.entries(categories)) {
-          cheatsHtml += '<div class="cheat-category-group">';
-          cheatsHtml += '  <div class="cheat-category-header"><span>📁 ' + catName + '</span><span>' + catCheats.length + ' mods</span></div>';
-          
-          for (const c of catCheats) {
-            const isSaved = data.savedMods[c.id]?.enabled || false;
-            const isValueType = c.type === 'value';
-            cheatsHtml += '  <div class="cheat-row">';
-            cheatsHtml += '    <div>';
-            cheatsHtml += '      <div class="cheat-name">' + c.name + '</div>';
-            cheatsHtml += '      <div class="cheat-tags">';
-            if (c.hotkey) cheatsHtml += '        <span class="hotkey-badge">' + c.hotkey + '</span>';
-            cheatsHtml += '        <span>' + c.category + ' • ' + c.type + '</span>';
-            cheatsHtml += '      </div>';
-            cheatsHtml += '    </div>';
-            cheatsHtml += '    <div style="display: flex; align-items: center; gap: 14px;">';
-            if (isValueType) {
-              cheatsHtml += '      <div class="cheat-value-slider-box">';
-              cheatsHtml += '        <input type="range" class="cheat-range-input" id="slider-' + c.id + '" min="1" max="100" value="10" oninput="onCheatSliderChange(\'' + c.id + '\', this.value)">';
-              cheatsHtml += '        <span class="cheat-value-badge" id="badge-' + c.id + '">10</span>';
-              cheatsHtml += '      </div>';
-            }
-            cheatsHtml += '      <label class="switch">';
-            cheatsHtml += '        <input type="checkbox" id="toggle-' + c.id + '" ' + (isSaved ? 'checked' : '') + ' onchange="toggleCheatAction(\'' + c.id + '\', this.checked)">';
-            cheatsHtml += '        <span class="slider"></span>';
-            cheatsHtml += '      </label>';
-            cheatsHtml += '    </div>';
-            cheatsHtml += '  </div>';
-          }
-          cheatsHtml += '</div>';
-        }
-        document.getElementById('detail-cheats-container').innerHTML = cheatsHtml;
-      } else {
-        // Painel WeMod para Jogos Instalados sem Trainer Pré-cadastrado
-        document.getElementById('detail-cheats-container').innerHTML = `
-          <div style="background: rgba(22, 28, 38, 0.75); border: 1px solid var(--border); border-radius: 14px; padding: 32px 24px; text-align: center; margin-top: 10px;">
-            <div style="font-size: 38px; margin-bottom: 12px;">🎮</div>
-            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 8px;">Jogo Pronto para Iniciar & Modificar!</h3>
-            <p style="color: var(--text-muted); font-size: 13.5px; max-width: 620px; margin: 0 auto 24px; line-height: 1.5;">
-              O jogo <strong>${selectedGame.title}</strong> está instalado e pronto. Você pode iniciar o jogo pelo botão <strong>JOGAR (AUTO-LAUNCH)</strong> acima ou usar as ferramentas de modding abaixo:
-            </p>
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-              <button class="speed-preset-btn" style="padding: 10px 18px; font-size: 13px;" onclick="openStudioForGame('${selectedGame.processName}')">🧪 Abrir Cheat Maker Studio</button>
-              <button class="speed-preset-btn" style="padding: 10px 18px; font-size: 13px;" onclick="searchCloudForGame('${selectedGame.title}')">☁️ Buscar Mods na Nuvem</button>
-              <button class="speed-preset-btn" style="padding: 10px 18px; font-size: 13px;" onclick="switchTab('tab-importer')">📥 Importar Tabela .CT</button>
-            </div>
-          </div>
-        `;
-      }
+      // Carrega e renderiza o arsenal completo de cheats inteligente para este jogo
+      await reloadGameCheatsInView();
 
       switchTab('tab-game-details');
       document.querySelector('main').scrollTop = 0;
