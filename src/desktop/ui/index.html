@@ -1577,7 +1577,7 @@
       <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
       <div class="brand-text">
         <h1>Open Trainer</h1>
-        <span id="engine-version-label">ENGINE v0.5.2</span>
+        <span id="engine-version-label">ENGINE v0.5.3</span>
       </div>
     </div>
 
@@ -2211,8 +2211,7 @@
             await ipcRenderer.invoke('updater:install-and-restart', true);
           }, 1200);
         } else {
-          alert('Erro no download: ' + res.error + '
-Abrindo navegador...');
+          alert('Erro no download: ' + res.error + ' - Abrindo navegador...');
           ipcRenderer.invoke('open-external-url', activeUpdateInfo.downloadUrl);
           progBox.style.display = 'none';
           progText.style.display = 'none';

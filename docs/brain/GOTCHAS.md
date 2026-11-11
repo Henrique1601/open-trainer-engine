@@ -15,3 +15,7 @@
 ## 4. Disparo de GitHub Releases Obrigatório via Tag
 - **Problema:** Dar `git push origin main` não dispara o workflow `.github/workflows/release.yml`. Usuários e o in-app updater não encontram o novo `.exe` no GitHub.
 - **Solução:** Sempre criar a tag anotada correspondente (`git tag -a vX.Y.Z -m "..."`) e realizar `git push origin vX.Y.Z`.
+
+## 5. Quebras de Linha em Scripts Injetados via Template Literals
+- **Problema:** Injetar strings JS contendo `\n` dentro de template literals em Node.js avalia a sequência como um caractere de nova linha literal (`\x0A`), quebrando strings em aspas simples no browser (`SyntaxError: Invalid or unexpected token`). Isso impede o carregamento do `<script>` e quebra 100% dos botões `onclick`.
+- **Solução:** Validar a integridade sintática do script gerado com `new vm.Script(...)` e testes unitários dedicados em `tests/ui-syntax-and-handlers.test.ts`.

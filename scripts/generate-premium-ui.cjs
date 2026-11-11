@@ -1583,7 +1583,7 @@ const content = `<!DOCTYPE html>
       <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
       <div class="brand-text">
         <h1>Open Trainer</h1>
-        <span id="engine-version-label">ENGINE v0.5.2</span>
+        <span id="engine-version-label">ENGINE v0.5.3</span>
       </div>
     </div>
 
@@ -2217,7 +2217,7 @@ const content = `<!DOCTYPE html>
             await ipcRenderer.invoke('updater:install-and-restart', true);
           }, 1200);
         } else {
-          alert('Erro no download: ' + res.error + '\nAbrindo navegador...');
+          alert('Erro no download: ' + res.error + ' - Abrindo navegador...');
           ipcRenderer.invoke('open-external-url', activeUpdateInfo.downloadUrl);
           progBox.style.display = 'none';
           progText.style.display = 'none';
@@ -3176,6 +3176,13 @@ const content = `<!DOCTYPE html>
 </body>
 </html>
 `;
+
+const vm = require('vm');
+const scriptMatch = content.match(/<script>([\s\S]*?)<\/script>/);
+if (scriptMatch) {
+  new vm.Script(scriptMatch[1], { filename: 'index.html.js' });
+  console.log('✓ Sintaxe JavaScript do index.html validada com sucesso via vm.Script!');
+}
 
 fs.writeFileSync(targetPath, content, 'utf8');
 console.log('src/desktop/ui/index.html gerado com sucesso! Tamanho:', content.length, 'bytes');

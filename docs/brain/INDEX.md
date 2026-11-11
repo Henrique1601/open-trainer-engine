@@ -11,13 +11,9 @@ Bem-vindo ao Segundo Cérebro do **Open Trainer Engine**. Esta base de conhecime
 ---
 
 ## 🚀 Versão Atual em Produção
-- **Versão:** `v0.5.2`
-- **Release no GitHub:** [v0.5.2 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.5.2)
-- **Melhorias & Recursos da v0.5.2 (Redesign Visual WeMod Pro AAA):**
-  - **Tipografia Gaming de Alta Precisão:** Integração das fontes `Outfit`, `Plus Jakarta Sans` e `JetBrains Mono` com suavização anti-aliasing nativa.
-  - **Topbar Header (App Bar Strip):** Barra superior de comando com busca universal instantânea (`Ctrl+K`), botão tátil de mute/áudio (`🔊 / 🔇`), atalho direto para Overlay (`🖥️ Ctrl+G`) e beacon neon de status do motor.
-  - **Keycaps Mecânicos 3D Interativos:** Atalhos de teclado estilizados como teclas mecânicas com efeito de depressão ao clique e remapeador em 1 clique (`startRebindHotkey`).
-  - **Sintetizador de Áudio Web Audio API (Sons WeMod):** Efeitos sonoros estéreo e chimes futuristas em síntese senoidal para ativação/desativação de cheats, cliques e ticks de sliders sem dependências externas.
-  - **Speedhack Cockpit Panel:** Painel com slider contínuo (0.1x a 5.0x) e botões de atalho rápido (0.2x, 0.5x, 1.0x, 2.0x, 5.0x) com indicador numérico digital.
-  - **Cards com 3D Tilt & Posters WeMod:** Proporção de poster otimizada com badges de plataforma autênticos (Steam, Epic, Xbox, GOG, PC), contagem de mods e favoritos com iluminação neon.
-  - **Overlay In-Game Sincronizado:** HUD OSD agora recebe eventos de troca de tema e exibe toasts com iluminação do tema ativo.
+- **Versão:** `v0.5.3`
+- **Release no GitHub:** [v0.5.3 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.5.3)
+- **Correções & Recursos da v0.5.3:**
+  - **Correção Crítica de Botões (SyntaxError no `<script>`):** Corrigido o caractere de escape de quebra de linha que quebrava o parser JavaScript no Chromium, impedindo a definição das funções de clique.
+  - **Guarda de Sintaxe Automatizada:** Integrada validação estrita via `vm.Script` na geração de HTML e na nova suíte `tests/ui-syntax-and-handlers.test.ts`.
+  - **Redesign Visual WeMod Pro AAA:** Tipografia `Outfit` + `Plus Jakarta Sans`, Topbar Header com busca `Ctrl+K`, Keycaps mecânicos 3D interativos, sons sintetizados Web Audio API e Speedhack Cockpit.
