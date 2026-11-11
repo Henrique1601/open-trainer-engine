@@ -549,8 +549,19 @@ ipcMain.handle('updater:install-and-restart', async (_event, silent: boolean = t
 
 
 // ==============================================================================
-// In-Game OSD & Overlay Controls (Auto-Pause & Screenshot)
+// In-Game OSD & Overlay Controls (Auto-Pause & Screenshot & Toggle)
 // ==============================================================================
+ipcMain.handle('overlay:toggle', async () => {
+  if (!overlayWindow) return { visible: false };
+  if (overlayWindow.isVisible()) {
+    overlayWindow.hide();
+    return { visible: false };
+  } else {
+    overlayWindow.showInactive();
+    return { visible: true };
+  }
+});
+
 ipcMain.handle('game:toggle-pause', async () => {
   if (!activeSession) {
     return { isPaused: false, message: 'Nenhum jogo ativo.' };

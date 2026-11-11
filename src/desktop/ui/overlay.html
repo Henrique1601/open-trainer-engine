@@ -3,12 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <title>HUD Overlay & OSD Toasts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Outfit:wght@700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root, body[data-theme="wemod"] {
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.5);
+      --bg: rgba(10, 14, 22, 0.92);
+      --border: rgba(255, 255, 255, 0.12);
+    }
+    body[data-theme="cyberpunk"] {
+      --accent: #fcee0a;
+      --accent-glow: rgba(252, 238, 10, 0.6);
+      --bg: rgba(8, 10, 15, 0.94);
+      --border: rgba(0, 240, 255, 0.3);
+    }
+    body[data-theme="obsidian"] {
+      --accent: #a855f7;
+      --accent-glow: rgba(168, 85, 247, 0.55);
+      --bg: rgba(13, 9, 26, 0.92);
+      --border: rgba(168, 85, 247, 0.3);
+    }
+    body[data-theme="crimson"] {
+      --accent: #ff2a4b;
+      --accent-glow: rgba(255, 42, 75, 0.55);
+      --bg: rgba(16, 8, 10, 0.94);
+      --border: rgba(255, 42, 75, 0.3);
+    }
+    body[data-theme="frost"] {
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.55);
+      --bg: rgba(10, 18, 32, 0.92);
+      --border: rgba(56, 189, 248, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
     body {
       background: transparent;
-      color: #e6edf3;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       padding: 12px;
       user-select: none;
       overflow: hidden;
@@ -31,27 +66,27 @@
     }
 
     .osd-toast {
-      background: rgba(13, 17, 23, 0.94);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-left: 4px solid #58a6ff;
-      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
       padding: 10px 14px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(14px);
-      animation: slideInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75), 0 0 16px var(--accent-glow);
+      backdrop-filter: blur(16px);
+      animation: slideInDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transition: all 0.3s ease;
     }
     .osd-toast.on {
-      border-left-color: #3fb950;
-      box-shadow: 0 8px 24px rgba(46, 160, 67, 0.35);
+      border-left-color: var(--accent);
     }
     .osd-toast.off {
-      border-left-color: #f85149;
+      border-left-color: #ef4444;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75);
     }
     .osd-toast.fade-out {
       opacity: 0;
@@ -59,18 +94,18 @@
     }
 
     @keyframes slideInDown {
-      from { opacity: 0; transform: translateY(-20px); }
+      from { opacity: 0; transform: translateY(-16px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     /* Menu do HUD Overlay */
     #overlay-menu {
-      background: rgba(13, 17, 23, 0.88);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75);
+      background: var(--bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px var(--accent-glow);
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -80,34 +115,46 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 10px;
-      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
     }
-    .title-group h2 { font-size: 14px; font-weight: 800; color: #58a6ff; letter-spacing: -0.2px; }
-    .title-group span { font-size: 10px; color: #8b949e; }
+    .title-group h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: -0.2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px var(--accent-glow);
+    }
+    .title-group span {
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
-      background: #238636;
-      box-shadow: 0 0 8px #2ea043;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
     }
 
     .tools-bar {
       display: flex;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .tool-btn {
       flex: 1;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #e6edf3;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -116,14 +163,14 @@
       transition: all 0.2s ease;
     }
     .tool-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: #58a6ff;
+      background: rgba(255, 255, 255, 0.14);
+      border-color: var(--accent);
     }
     .tool-btn.active {
       background: #f59e0b;
       color: #000;
       border-color: #f59e0b;
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
     }
 
     #cheats-list {
@@ -135,38 +182,45 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 10px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.03);
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
       margin-bottom: 6px;
-      font-size: 12px;
+      font-size: 12.5px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
+      border: 1px solid transparent;
     }
     .cheat-item:hover {
-      background: rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
     }
     .cheat-item.active {
-      background: rgba(35, 134, 54, 0.22);
-      border: 1px solid rgba(46, 160, 67, 0.45);
+      background: rgba(16, 185, 129, 0.14);
+      border-color: var(--accent);
+      color: var(--accent);
     }
     .hotkey-badge {
-      background: #21262d;
-      border: 1px solid #30363d;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      font-size: 11px;
-      color: #79c0ff;
-      margin-right: 6px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 10.5px;
+      color: var(--accent);
+      margin-right: 8px;
+      font-weight: 800;
     }
     .cheat-status {
-      font-size: 10px;
-      font-weight: 700;
-      color: #8b949e;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #94a3b8;
+      font-family: 'JetBrains Mono', Consolas, monospace;
     }
     .cheat-status.on {
-      color: #3fb950;
+      color: var(--accent);
+      text-shadow: 0 0 8px var(--accent-glow);
     }
   </style>
 </head>
@@ -188,7 +242,7 @@
     <!-- Barra de Ferramentas In-Game (Auto-Pause e Captura) -->
     <div class="tools-bar">
       <button class="tool-btn" id="btn-pause-game" onclick="toggleGamePause()">
-        <span>⏸</span> Auto-Pause Jogo
+        <span>⏸</span> Auto-Pause
       </button>
       <button class="tool-btn" onclick="takeInGameScreenshot()">
         <span>📷</span> Screenshot
@@ -197,7 +251,7 @@
 
     <!-- Lista de Cheats do Jogo -->
     <div id="cheats-list">
-      <div style="color: #8b949e; font-size: 12px; text-align: center; padding: 20px;">
+      <div style="color: #94a3b8; font-size: 12px; text-align: center; padding: 24px;">
         Nenhum jogo ou trainer anexado no momento.
       </div>
     </div>
@@ -207,6 +261,11 @@
     const { ipcRenderer } = require('electron');
 
     let currentCheats = [];
+
+    // Sincroniza tema com a janela principal
+    ipcRenderer.on('theme:changed', (_event, themeId) => {
+      document.body.setAttribute('data-theme', themeId);
+    });
 
     // OSD Toast Notification
     function showOsdToast(title, message, isEnabled) {
@@ -218,7 +277,7 @@
           <span>${isEnabled ? '🟢' : '⚪'}</span>
           <span>${title}</span>
         </div>
-        <span style="font-size: 11px; opacity: 0.85;">${message}</span>
+        <span style="font-size: 11px; opacity: 0.9;">${message}</span>
       `;
       container.appendChild(toast);
 
@@ -243,7 +302,7 @@
     ipcRenderer.on('sync-overlay-cheats', (_event, data) => {
       const list = document.getElementById('cheats-list');
       if (!data.cheats || data.cheats.length === 0) {
-        list.innerHTML = '<div style="color: #8b949e; font-size: 12px; text-align: center; padding: 20px;">Nenhum trainer ativo no momento.</div>';
+        list.innerHTML = '<div style="color: #94a3b8; font-size: 12px; text-align: center; padding: 24px;">Nenhum trainer ativo no momento.</div>';
         return;
       }
       currentCheats = data.cheats;
@@ -272,11 +331,11 @@
       const res = await ipcRenderer.invoke('game:toggle-pause');
       if (res.isPaused) {
         btn.classList.add('active');
-        btn.innerHTML = '<span>▶</span> Jogo Pausado';
+        btn.innerHTML = '<span>▶</span> Pausado';
         showOsdToast('Game Paused', 'Thread do jogo congelada com segurança', true);
       } else {
         btn.classList.remove('active');
-        btn.innerHTML = '<span>⏸</span> Auto-Pause Jogo';
+        btn.innerHTML = '<span>⏸</span> Auto-Pause';
         showOsdToast('Game Resumed', 'Execução do jogo retomada', false);
       }
     }

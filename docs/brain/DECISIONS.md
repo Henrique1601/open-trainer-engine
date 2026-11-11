@@ -24,3 +24,14 @@
 ## ADR-006: Speedhack Real no Processo e Multitemas 3D
 - **Contexto:** O Speedhack anterior apenas alterava o estado interno de variáveis JavaScript sem atuar sobre o processo do jogo no Windows.
 - **Decisão:** Implementado em `SpeedhackEngine` o modo Bullet-time com micro-pulsos de ciclo de trabalho usando `NtSuspendProcess`/`NtResumeProcess` e modo Turbo via prioridade de processo Win32 (`SetPriorityClass`), além de 5 temas visuais dinâmicos (WeMod, Cyberpunk, Obsidian, Crimson, Frost) e física 3D Tilt nos cards.
+
+---
+
+### ADR-007: Redesign Visual Completo Estilo WeMod Pro & Áudio Tátil Sintetizado (2026-11-10)
+- **Status:** Aceito e Implementado (v0.5.2)
+- **Contexto:** A interface anterior apresentava tipografia de sistema básica, ausência de topbar superior de controle, atalhos de cheats estáticos e feedback tátil inexistente, conferindo aspecto amador.
+- **Decisão:**
+  1. Adicionado Topbar Header com busca global instantânea (`Ctrl+K`), controle global de som tátil, acionamento do overlay HUD e status em tempo real do processo.
+  2. Adotada tipografia gaming profissional (`Outfit`, `Plus Jakarta Sans` e `JetBrains Mono`).
+  3. Criado o sintetizador de áudio `SoundEngine` usando a Web Audio API nativa para reproduzir chimes e cliques WeMod puros sem carregar arquivos MP3/WAV pesados (Princípio Ponytail).
+  4. Implementado o remapeamento interativo de atalhos (`startRebindHotkey`) que permite clicar no keycap mecânico 3D de qualquer cheat para gravar uma nova tecla em tempo de execução.

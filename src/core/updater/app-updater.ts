@@ -31,10 +31,10 @@ export class AppUpdater extends EventEmitter {
       const pkgPath = path.resolve('package.json');
       if (fs.existsSync(pkgPath)) {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-        return pkg.version || '0.5.1';
+        return pkg.version || '0.5.2';
       }
     } catch {}
-    return '0.5.1';
+    return '0.5.2';
   }
 
   /**
