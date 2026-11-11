@@ -42,3 +42,4 @@ scratch/
 tmp/
 coverage/
 *.tmp
+wemod-extracted/

@@ -35,3 +35,20 @@
   2. Adotada tipografia gaming profissional (`Outfit`, `Plus Jakarta Sans` e `JetBrains Mono`).
   3. Criado o sintetizador de áudio `SoundEngine` usando a Web Audio API nativa para reproduzir chimes e cliques WeMod puros sem carregar arquivos MP3/WAV pesados (Princípio Ponytail).
   4. Implementado o remapeamento interativo de atalhos (`startRebindHotkey`) que permite clicar no keycap mecânico 3D de qualquer cheat para gravar uma nova tecla em tempo de execução.
+
+---
+
+### ADR-008: Engenharia Reversa do WeMod v10 (Wand) & Fidelidade Visual Absoluta (2026-11-11)
+- **Status:** Aceito e Implementado (v0.6.0)
+- **Contexto:** O usuário forneceu capturas reais da versão oficial mais recente do WeMod v10 (Wand) rodando localmente (`C:\Users\henri\AppData\Local\Wand\app-12.71.0\resources\app.asar`), destacando discrepâncias na estrutura de telas, menus contextuais, listas de jogos com ícones autênticos, toggles e painéis.
+- **Decisão:**
+  1. Engenharia reversa dos bundles CSS e do dicionário `pt-BR.json` do WeMod local para extração de tokens exatos, paleta `#111217`, `#13141a`, ciano `#00f59b`, amarelo pro `#ffd700` e radius pill.
+  2. Implementação da Topbar WAND com logo oficial, botões de histórico `← →`, `🏠`, barra de busca centralizada, avatar com menu popup de perfil ("Meu Perfil", "Ajuda ↗", "Conectar ao Steam", "Discord ↗", "Feedback", "Configurações"), botão dourado "TORNE-SE PRO" e botões de janela nativos sem borda do SO (`frame: false`).
+  3. Sidebar dinâmica em dois modos:
+     - Modo Normal: navegação (Mapas, Destaques, Wand Pro, Biblioteca, Pulse), lista de Favoritos e Meus Jogos (190) com ícones reais.
+     - Modo Jogo: widget contextual no topo com nome do jogo, botão Play e abas (Personalizar, Mapa, Destaques, Sessões, Sugestões).
+  4. Tela Início com hero widescreen duplo (Phantom Blade Zero / Crimson Desert com badges NEW/UPDATE) e prateleiras de cápsulas horizontais (Meus jogos, Mais populares, Novos e recentemente atualizados).
+  5. Tela Mapas em grid de 4 colunas com preview de satélite/topográfico, badge "X MAPAS", ícone + título e estrela de favoritos conectada ao MapGenie.
+  6. Tela Biblioteca em modo tabela/lista com ícone, título, favoritos, gêneros e ícones das plataformas Steam/Epic.
+  7. Tela de Detalhes do Jogo espelhando Assassin's Creed Origins: hero com arte imersiva, poster vertical, chips de filtro (Todos, Assistir, Facilitar, Sandbox, Novo Pro), cheats com segmented toggles `[ Off | On ]` e keycaps 3D, e coluna lateral com widget do Mapa e player de vídeo companion.
+- **Consequência:** Experiência visual idêntica à aplicação oficial WeMod v10 / Wand, com todos os cliques, atalhos e integrações nativas funcionando perfeitamente.

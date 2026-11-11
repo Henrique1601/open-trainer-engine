@@ -11,9 +11,13 @@ Bem-vindo ao Segundo Cérebro do **Open Trainer Engine**. Esta base de conhecime
 ---
 
 ## 🚀 Versão Atual em Produção
-- **Versão:** `v0.5.3`
-- **Release no GitHub:** [v0.5.3 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.5.3)
-- **Correções & Recursos da v0.5.3:**
-  - **Correção Crítica de Botões (SyntaxError no `<script>`):** Corrigido o caractere de escape de quebra de linha que quebrava o parser JavaScript no Chromium, impedindo a definição das funções de clique.
-  - **Guarda de Sintaxe Automatizada:** Integrada validação estrita via `vm.Script` na geração de HTML e na nova suíte `tests/ui-syntax-and-handlers.test.ts`.
-  - **Redesign Visual WeMod Pro AAA:** Tipografia `Outfit` + `Plus Jakarta Sans`, Topbar Header com busca `Ctrl+K`, Keycaps mecânicos 3D interativos, sons sintetizados Web Audio API e Speedhack Cockpit.
+- **Versão:** `v0.6.0`
+- **Release no GitHub:** [v0.6.0 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.6.0)
+- **Recursos & Fidelidade Visual da v0.6.0 (WeMod v10 / Wand Edition):**
+  - **Fidelidade Visual 100% WeMod v10:** Topbar WAND, histórico de navegação `← →`, busca centralizada, menu popup de perfil ("Meu Perfil", "Ajuda ↗", "Conectar ao Steam", "Discord ↗", "Feedback", "Configurações") e botão dourado "TORNE-SE PRO".
+  - **Sidebar Dinâmica Contextual:** Exibição contextual do jogo selecionado no topo com botão Play rápido e sub-abas (Personalizar, Mapa, Destaques, Sessões, Sugestões), além de lista completa de Favoritos e Meus Jogos (190) com ícones autênticos detectados.
+  - **Hero Widescreen Duplo & Cápsulas:** Tela Início espelhando Phantom Blade Zero / Crimson Desert e prateleiras de cápsulas horizontais para jogos instalados e populares.
+  - **Aba Mapas em Grid de 4 Colunas:** Preview topográfico/satélite de mapas com badges "X MAPAS", estrela de favorito e integração interativa ao vivo com MapGenie.
+  - **Biblioteca em Modo Lista:** Visual de tabela com ícone, título, favoritos, gêneros e ícones das plataformas Steam/Epic.
+  - **Tela de Cheats Oficial (Assassin's Creed Origins Style):** Hero com poster vertical e backdrop imersivo, chips de categoria (Todos, Assistir, Facilitar, Sandbox, Novo Pro), cheats com segmented toggles WeMod `[ Off | On ]` e keycaps mecânicos 3D, além de coluna lateral com mini-mapa interativo e player de vídeo companion.
+  - **Janela Frameless Moderna:** Aplicação em `frame: false` com controles de janela nativos customizados (`window:minimize`, `window:maximize`, `window:close`).

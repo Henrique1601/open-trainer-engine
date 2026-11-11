@@ -92,13 +92,14 @@ function getAppIconPath(): string {
 function createMainWindow() {
   const iconPath = getAppIconPath();
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 820,
+    width: 1320,
+    height: 840,
     minWidth: 1040,
     minHeight: 680,
-    backgroundColor: '#0a0d14',
-    title: 'Open Trainer Engine',
-    frame: true,
+    backgroundColor: '#111217',
+    title: 'Open Trainer Engine (Wand / WeMod Edition)',
+    frame: false,
+    titleBarStyle: 'hidden',
     ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       nodeIntegration: true,
@@ -213,7 +214,31 @@ app.on('will-quit', () => {
 // ==============================================================================
 
 ipcMain.handle('scan-games', async () => {
-  return GameDetector.scanAll();
+  const games = GameDetector.scanAll();
+  return GameArtResolver.enrichAll(games);
+});
+
+ipcMain.handle('window:minimize', async () => {
+  mainWindow?.minimize();
+  return true;
+});
+
+ipcMain.handle('window:maximize', async () => {
+  if (mainWindow?.isMaximized()) {
+    mainWindow?.unmaximize();
+  } else {
+    mainWindow?.maximize();
+  }
+  return mainWindow?.isMaximized() || false;
+});
+
+ipcMain.handle('window:close', async () => {
+  mainWindow?.close();
+  return true;
+});
+
+ipcMain.handle('window:is-maximized', async () => {
+  return mainWindow?.isMaximized() || false;
 });
 
 ipcMain.handle('list-trainers', async () => {
@@ -388,14 +413,26 @@ ipcMain.handle('speedhack:set', async (_event, multiplier, targetPid, processNam
 // ==============================================================================
 // Catálogo Rico de Cheats & Cheats Customizados
 // ==============================================================================
-ipcMain.handle('trainer:get-cheats', async (_event, gameId: string, title: string, processName?: string) => {
+ipcMain.handle('trainer:get-cheats', async (_event, gameId: string, arg2?: string, arg3?: string) => {
+  const isArg2Exe = Boolean(arg2 && (arg2.toLowerCase().endsWith('.exe') || arg2.includes('.')));
+  const title = isArg2Exe ? (arg3 || gameId) : (arg2 || gameId);
+  const processName = isArg2Exe ? arg2 : arg3;
+
   const defaults = DefaultCheatsProvider.getCheatsForGame(title || gameId, processName);
-  const staticTrainers = TrainerLoader.scanTrainersDirectory(path.resolve('configs/trainers'));
-  const staticTrainer = staticTrainers.find((t: any) =>
-    t.id === gameId ||
-    (processName && t.processName.toLowerCase() === processName.toLowerCase()) ||
-    t.title.toLowerCase().includes((title || '').toLowerCase())
-  );
+  const staticDirs = [path.resolve('configs'), path.resolve('configs/trainers')];
+  let staticTrainer: any = null;
+  for (const dir of staticDirs) {
+    if (fs.existsSync(dir)) {
+      const trainers = TrainerLoader.scanTrainersDirectory(dir);
+      staticTrainer = trainers.find((t: any) =>
+        t.id === gameId ||
+        (processName && t.processName && t.processName.toLowerCase() === processName.toLowerCase()) ||
+        t.title.toLowerCase().includes((title || '').toLowerCase()) ||
+        (title && t.title.toLowerCase() === title.toLowerCase())
+      );
+      if (staticTrainer) break;
+    }
+  }
 
   const customCheats = PreferencesStore.getCustomCheats(gameId);
 
@@ -429,6 +466,13 @@ ipcMain.handle('theme:get', async () => {
 });
 
 ipcMain.handle('theme:set', async (_event, theme: string) => {
+  const applied = PreferencesStore.setTheme(theme);
+  mainWindow?.webContents.send('theme:changed', applied);
+  overlayWindow?.webContents.send('theme:changed', applied);
+  return applied;
+});
+
+ipcMain.handle('preferences:save-theme', async (_event, theme: string) => {
   const applied = PreferencesStore.setTheme(theme);
   mainWindow?.webContents.send('theme:changed', applied);
   overlayWindow?.webContents.send('theme:changed', applied);

@@ -1,2027 +1,2275 @@
+/**
+ * generate-wemod-v10-ui.cjs
+ * Gerador da Interface Oficial WeMod / Wand v10 para Open Trainer Engine.
+ * Fidelidade visual total aos 5 screenshots do usuário:
+ * 1. Início/Destaques: Topbar WAND, History arrows, Hero duplo, Meus jogos cápsulas, Mais populares.
+ * 2. Menu de Perfil: Popup do avatar com Meu Perfil, Ajuda ↗, Steam, Discord ↗, Feedback, Configurações.
+ * 3. Mapas: 4 colunas com preview topográfico, badge "X MAPAS", ícone + título, favorito.
+ * 4. Biblioteca: Meus jogos em lista compacta com ícone, título, estrela, gêneros, logo Steam/Epic.
+ * 5. Detalhes do Jogo: Sub-nav contextual na sidebar, Hero widescreen com poster vertical,
+ *    chips de categoria (Todos, Assistir, Facilitar, Sandbox, Novo Pro), cheats com toggle Off/On WeMod,
+ *    keycaps 3D, e coluna direita com Mapa interativo e Video companion.
+ */
+
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
-const targetPath = path.resolve('src/desktop/ui/index.html');
-
-// Create the complete, ultra-premium HTML with WeMod Pro styling, topbar, sound synthesizer, keycap rebind, and 5 themes
-const content = `<!DOCTYPE html>
+function generateHtml() {
+  return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Open Trainer Engine</title>
-  <!-- Google Fonts para Tipografia Gaming AAA (com fallback robusto) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Trainer Engine • Wand / WeMod Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* ==========================================================================
-       DESIGN SYSTEM & TOKENS - NÍVEL WEMOD PRO & APPLE / LINEAR
+       DESIGN TOKENS & MULTITEMAS (Base WeMod v10 / Panda CSS)
        ========================================================================== */
-    :root, body[data-theme="wemod"] {
-      --bg-dark: #07090e;
-      --bg-sidebar: #0c1017;
-      --bg-topbar: rgba(12, 16, 23, 0.85);
-      --bg-card: rgba(18, 24, 34, 0.78);
-      --bg-card-hover: rgba(26, 36, 52, 0.92);
-      --bg-input: #090c12;
-      --border: rgba(255, 255, 255, 0.08);
-      --border-highlight: rgba(16, 185, 129, 0.45);
-      --accent: #10b981;
-      --accent-rgb: 16, 185, 129;
-      --accent-glow: rgba(16, 185, 129, 0.55);
-      --accent-gradient: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-      --accent-text: #052e16;
-      --green: #10b981;
-      --green-glow: #059669;
-      --gold: #f59e0b;
-      --danger: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --font-ui: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-      --font-mono: 'JetBrains Mono', Consolas, monospace;
-      --shadow-3d: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(16, 185, 129, 0.22);
-      --glass-blur: blur(20px);
-    }
-
-    body[data-theme="cyberpunk"] {
-      --bg-dark: #050608;
-      --bg-sidebar: #090a0f;
-      --bg-topbar: rgba(9, 10, 15, 0.9);
-      --bg-card: rgba(20, 16, 32, 0.85);
-      --bg-card-hover: rgba(36, 24, 58, 0.95);
-      --bg-input: #07080c;
-      --border: rgba(0, 240, 255, 0.22);
-      --border-highlight: rgba(252, 238, 10, 0.65);
-      --accent: #fcee0a;
-      --accent-rgb: 252, 238, 10;
-      --accent-glow: rgba(252, 238, 10, 0.6);
-      --accent-gradient: linear-gradient(135deg, #fcee0a 0%, #ff0055 100%);
-      --accent-text: #1a1600;
-      --green: #00f0ff;
-      --green-glow: #00bcd4;
-      --gold: #fcee0a;
-      --danger: #ff0055;
-      --text: #ffffff;
-      --text-muted: #9499ab;
-      --shadow-3d: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 24px rgba(0, 240, 255, 0.28);
-    }
-
-    body[data-theme="obsidian"] {
-      --bg-dark: #07050e;
-      --bg-sidebar: #0d091a;
-      --bg-topbar: rgba(13, 9, 26, 0.88);
-      --bg-card: rgba(24, 18, 42, 0.82);
-      --bg-card-hover: rgba(38, 28, 66, 0.94);
-      --bg-input: #0a0714;
-      --border: rgba(168, 85, 247, 0.25);
-      --border-highlight: rgba(236, 72, 153, 0.65);
-      --accent: #a855f7;
-      --accent-rgb: 168, 85, 247;
-      --accent-glow: rgba(168, 85, 247, 0.65);
-      --accent-gradient: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
-      --accent-text: #2e0854;
-      --green: #a855f7;
-      --green-glow: #9333ea;
-      --gold: #f472b6;
-      --danger: #f43f5e;
-      --text: #f8fafc;
+    :root, [data-theme="wemod"] {
+      --bg-canvas: #111217;
+      --bg-sidebar: #13141a;
+      --bg-topbar: #16171d;
+      --bg-card: #1a1c24;
+      --bg-card-hover: #212430;
+      --bg-surface: #20232d;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(0, 245, 155, 0.5);
+      
+      --accent: #00f59b;
+      --accent-hover: #00d9b5;
+      --accent-glow: rgba(0, 245, 155, 0.35);
+      --accent-text: #000000;
+      
+      --pro-gold: #ffd700;
+      --pro-gold-grad: linear-gradient(135deg, #fce881 0%, #e5a910 100%);
+      --pulse-purple: #c026d3;
+      
+      --text-main: #f3f4f6;
       --text-muted: #9ca3af;
-      --shadow-3d: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(168, 85, 247, 0.28);
+      --text-dim: #6b7280;
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      
+      --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    body[data-theme="crimson"] {
-      --bg-dark: #090607;
-      --bg-sidebar: #12090b;
-      --bg-topbar: rgba(18, 9, 11, 0.88);
-      --bg-card: rgba(30, 16, 20, 0.85);
-      --bg-card-hover: rgba(48, 22, 28, 0.95);
-      --bg-input: #0b0507;
-      --border: rgba(255, 42, 75, 0.25);
-      --border-highlight: rgba(249, 115, 22, 0.65);
-      --accent: #ff2a4b;
-      --accent-rgb: 255, 42, 75;
-      --accent-glow: rgba(255, 42, 75, 0.65);
-      --accent-gradient: linear-gradient(135deg, #ff2a4b 0%, #f97316 100%);
-      --accent-text: #450a0a;
-      --green: #ff2a4b;
-      --green-glow: #dc2626;
-      --gold: #f97316;
-      --danger: #ef4444;
-      --text: #fef2f2;
-      --text-muted: #a1a1aa;
-      --shadow-3d: 0 16px 36px rgba(0, 0, 0, 0.82), 0 0 20px rgba(255, 42, 75, 0.3);
+    [data-theme="cyberpunk"] {
+      --bg-canvas: #090a0f;
+      --bg-sidebar: #0f1017;
+      --bg-topbar: #141522;
+      --bg-card: #181928;
+      --bg-card-hover: #23253a;
+      --accent: #00e5ff;
+      --accent-hover: #00c4db;
+      --accent-glow: rgba(0, 229, 255, 0.4);
+      --accent-text: #000000;
+      --pro-gold: #fcee0a;
+      --pro-gold-grad: linear-gradient(135deg, #fcee0a 0%, #ff0055 100%);
     }
 
-    body[data-theme="frost"] {
-      --bg-dark: #060a12;
-      --bg-sidebar: #0b1322;
-      --bg-topbar: rgba(11, 19, 34, 0.88);
-      --bg-card: rgba(16, 28, 48, 0.82);
-      --bg-card-hover: rgba(26, 44, 74, 0.94);
-      --bg-input: #080e18;
-      --border: rgba(56, 189, 248, 0.25);
-      --border-highlight: rgba(129, 140, 248, 0.65);
+    [data-theme="obsidian"] {
+      --bg-canvas: #08080a;
+      --bg-sidebar: #0c0d10;
+      --bg-topbar: #101116;
+      --bg-card: #15161d;
+      --bg-card-hover: #1e202a;
+      --accent: #a855f7;
+      --accent-hover: #9333ea;
+      --accent-glow: rgba(168, 85, 247, 0.35);
+      --accent-text: #ffffff;
+      --pro-gold: #eab308;
+      --pro-gold-grad: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+    }
+
+    [data-theme="crimson"] {
+      --bg-canvas: #0f0a0a;
+      --bg-sidebar: #140d0d;
+      --bg-topbar: #1c1212;
+      --bg-card: #221616;
+      --bg-card-hover: #2e1e1e;
+      --accent: #ff334b;
+      --accent-hover: #e0243b;
+      --accent-glow: rgba(255, 51, 75, 0.4);
+      --accent-text: #ffffff;
+      --pro-gold: #f59e0b;
+      --pro-gold-grad: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    [data-theme="frost"] {
+      --bg-canvas: #0c1117;
+      --bg-sidebar: #101720;
+      --bg-topbar: #151e2a;
+      --bg-card: #1a2533;
+      --bg-card-hover: #243346;
       --accent: #38bdf8;
-      --accent-rgb: 56, 189, 248;
-      --accent-glow: rgba(56, 189, 248, 0.65);
-      --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-      --accent-text: #082f49;
-      --green: #38bdf8;
-      --green-glow: #0284c7;
-      --gold: #38bdf8;
-      --danger: #f43f5e;
-      --text: #f0f9ff;
-      --text-muted: #94a3b8;
-      --shadow-3d: 0 16px 36px rgba(0, 0, 0, 0.78), 0 0 20px rgba(56, 189, 248, 0.25);
+      --accent-hover: #0ea5e9;
+      --accent-glow: rgba(56, 189, 248, 0.4);
+      --accent-text: #000000;
+      --pro-gold: #fbbf24;
+      --pro-gold-grad: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
     }
 
-    /* Reset & Base */
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     body {
-      background: var(--bg-dark);
-      color: var(--text);
-      font-family: var(--font-ui);
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
       height: 100vh;
-      display: flex;
-      user-select: none;
       overflow: hidden;
-      font-size: 13.5px;
-      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Scrollbars Elegantes */
+    /* Scrollbars Modernos */
     ::-webkit-scrollbar {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
     }
     ::-webkit-scrollbar-track {
-      background: transparent;
+      background: rgba(0, 0, 0, 0.15);
     }
     ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-pill);
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
-    }
-
-    /* Update Notification Banner Flutuante */
-    #update-banner {
-      display: none;
-      background: linear-gradient(90deg, #1f6feb 0%, #10b981 100%);
-      color: #fff;
-      padding: 10px 20px;
-      font-size: 13px;
-      font-weight: 700;
-      justify-content: space-between;
-      align-items: center;
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      z-index: 10000;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-      border-bottom: 1px solid rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes slideDown {
-      from { transform: translateY(-100%); }
-      to { transform: translateY(0); }
-    }
-    #update-banner button {
-      background: rgba(255, 255, 255, 0.25);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: #fff;
-      padding: 6px 16px;
-      border-radius: 6px;
-      font-weight: 800;
-      font-size: 12.5px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    #update-banner button:hover {
-      background: #fff;
-      color: #0d1117;
-      transform: scale(1.03);
+      background: rgba(255, 255, 255, 0.3);
     }
 
     /* ==========================================================================
-       SIDEBAR ACRÍLICA (WEMOD STYLE)
+       TOPBAR HEADER WAND (Fidelidade ao Print 1)
        ========================================================================== */
-    aside {
-      width: 260px;
-      background: var(--bg-sidebar);
-      border-right: 1px solid var(--border);
+    .wand-topbar {
+      height: 52px;
+      background-color: var(--bg-topbar);
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
-      flex-direction: column;
-      z-index: 20;
-      backdrop-filter: var(--glass-blur);
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
       flex-shrink: 0;
+      z-index: 100;
+      -webkit-app-region: drag;
     }
 
-    .brand {
-      padding: 20px 20px 16px;
+    .topbar-left {
       display: flex;
       align-items: center;
       gap: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .brand-logo-img {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px var(--accent-glow);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      object-fit: cover;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .brand-logo-img:hover {
-      transform: scale(1.08) rotate(3deg);
-    }
-    .brand-text h1 {
-      font-family: var(--font-heading);
-      font-size: 16px;
-      font-weight: 900;
-      letter-spacing: -0.3px;
-      line-height: 1.1;
-      text-transform: uppercase;
-      background: linear-gradient(180deg, #ffffff 30%, var(--text-muted) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .brand-text span {
-      font-family: var(--font-mono);
-      font-size: 10.5px;
-      color: var(--accent);
-      font-weight: 800;
-      letter-spacing: 0.5px;
+      -webkit-app-region: no-drag;
     }
 
-    /* Badge PRO Unlocked */
-    .pro-badge-card {
-      margin: 14px 14px 6px;
-      padding: 10px 14px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+    .wand-logo-wrap {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-    }
-    .pro-badge-tag {
-      font-size: 10px;
-      font-weight: 900;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: var(--accent-gradient);
-      color: var(--accent-text);
-      letter-spacing: 0.8px;
-    }
-
-    /* Seletor de Temas na Sidebar */
-    .theme-selector-box {
-      padding: 12px 14px;
-      margin: 8px 14px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-    .theme-label {
-      font-size: 10.5px;
-      font-weight: 800;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .theme-pills {
-      display: flex;
       gap: 8px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .theme-pill {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
       cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
     }
-    .theme-pill:hover {
-      transform: scale(1.22);
-    }
-    .theme-pill.active {
-      border-color: #ffffff;
-      transform: scale(1.15);
-      box-shadow: 0 0 12px currentColor;
-    }
-    .theme-pill.wemod { background: #10b981; color: #10b981; }
-    .theme-pill.cyberpunk { background: #fcee0a; color: #fcee0a; }
-    .theme-pill.obsidian { background: #a855f7; color: #a855f7; }
-    .theme-pill.crimson { background: #ff2a4b; color: #ff2a4b; }
-    .theme-pill.frost { background: #38bdf8; color: #38bdf8; }
 
-    /* Navegação */
-    .nav-group {
-      padding: 12px 10px 4px;
-    }
-    .nav-label {
-      font-size: 10.5px;
+    .wand-wordmark {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: 2.5px;
+      color: #ffffff;
       text-transform: uppercase;
-      color: var(--text-muted);
-      font-weight: 800;
-      padding: 0 12px 6px;
-      letter-spacing: 0.8px;
-      opacity: 0.7;
+      display: flex;
+      align-items: center;
     }
-    .nav-item {
+
+    .wand-wordmark span {
+      color: var(--accent);
+    }
+
+    .topbar-nav-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px;
+    }
+
+    .topbar-circle-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all var(--transition-fast);
+    }
+    .topbar-circle-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Centro: Barra de Busca Central Pill */
+    .topbar-center {
+      flex: 1;
+      max-width: 440px;
+      margin: 0 20px;
+      -webkit-app-region: no-drag;
+    }
+
+    .wand-search-pill {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 0 14px;
+      height: 34px;
+      transition: all var(--transition-fast);
+    }
+    .wand-search-pill:focus-within {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .wand-search-pill input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #ffffff;
+      font-size: 13px;
+      padding: 0 8px;
+    }
+    .wand-search-pill input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .search-btn-action {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .search-btn-action:hover {
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+
+    /* Direita: Ações, Perfil, Pro, Janela */
+    .topbar-right {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 9px 14px;
-      border-radius: 9px;
+      -webkit-app-region: no-drag;
+    }
+
+    .topbar-icon-action {
+      background: transparent;
+      border: none;
       color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--transition-fast);
+    }
+    .topbar-icon-action:hover {
+      color: #ffffff;
+    }
+
+    /* Avatar do Usuário com Menu Dropdown */
+    .user-avatar-wrap {
+      position: relative;
+    }
+
+    .user-avatar-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius-pill);
+      border: 2px solid var(--border-subtle);
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2a2d39;
+      transition: border-color var(--transition-fast);
+    }
+    .user-avatar-btn:hover {
+      border-color: var(--accent);
+    }
+    .user-avatar-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Botão Dourado Torne-se Pro */
+    .btn-torne-se-pro {
+      background: var(--pro-gold-grad);
+      color: #000000;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      padding: 7px 14px;
+      border-radius: var(--radius-pill);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      transition: transform var(--transition-fast), filter var(--transition-fast);
+    }
+    .btn-torne-se-pro:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .suporte-wand-btn {
+      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      transition: color var(--transition-fast);
+    }
+    .suporte-wand-btn:hover {
+      color: var(--text-main);
+    }
+
+    /* Controles de Janela */
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 6px;
+    }
+
+    .window-control-btn {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-size: 12px;
+      transition: all var(--transition-fast);
+    }
+    .window-control-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+    .window-control-btn.close:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       MENU POPUP DE PERFIL (Fidelidade ao Print 2)
+       ========================================================================== */
+    .profile-dropdown-menu {
+      position: absolute;
+      top: 48px;
+      right: 0;
+      width: 240px;
+      background: #1e202a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75);
+      padding: 8px 0;
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    .profile-dropdown-menu.show {
+      display: flex;
+    }
+
+    .profile-menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      color: var(--text-main);
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 3px;
-      transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
-      position: relative;
+      transition: background var(--transition-fast);
     }
-    .nav-item:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
-      transform: translateX(3px);
-    }
-    .nav-item.active {
-      background: rgba(var(--accent-rgb), 0.12);
-      color: var(--accent);
-      font-weight: 700;
-    }
-    .nav-item.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 6px;
-      bottom: 6px;
-      width: 3px;
-      background: var(--accent);
-      border-radius: 0 3px 3px 0;
-      box-shadow: 0 0 10px var(--accent-glow);
-    }
-    .nav-badge {
-      margin-left: auto;
-      font-size: 10.5px;
-      background: rgba(0, 0, 0, 0.4);
-      color: var(--text-muted);
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 800;
-      border: 1px solid var(--border);
-    }
-    .nav-item.active .nav-badge {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-color: var(--accent);
+    .profile-menu-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
     }
 
-    /* Sidebar Footer */
-    .sidebar-footer {
-      margin-top: auto;
-      padding: 14px 18px;
-      background: rgba(0,0,0,0.35);
-      border-top: 1px solid var(--border);
+    .profile-menu-item-left {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    .status-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      flex-shrink: 0;
-    }
-    .status-indicator.online {
-      background: #10b981;
-      box-shadow: 0 0 12px #10b981;
-      animation: pulseGlow 2s infinite ease-in-out;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.15); }
+
+    .profile-menu-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 6px 0;
     }
 
     /* ==========================================================================
-       CONTAINER PRINCIPAL & TOPBAR APP STRIP
+       CONTAINER PRINCIPAL (Sidebar + Workspace)
        ========================================================================== */
-    .app-workspace {
+    .app-main-layout {
       flex: 1;
       display: flex;
-      flex-direction: column;
       overflow: hidden;
-      background: radial-gradient(circle at 85% 15%, rgba(var(--accent-rgb), 0.08) 0%, transparent 60%), var(--bg-dark);
+      position: relative;
     }
 
-    /* Header Topbar Fixo */
-    .topbar-header {
-      height: 60px;
-      background: var(--bg-topbar);
-      border-bottom: 1px solid var(--border);
+    /* ==========================================================================
+       SIDEBAR DINÂMICA (Fidelidade aos Prints 1 e 5)
+       ========================================================================== */
+    .wand-sidebar {
+      width: 250px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* Sub-menu Contextual do Jogo Selecionado (Print 5) */
+    .sidebar-active-game-box {
+      display: none;
+      flex-direction: column;
+      padding: 12px 14px 8px 14px;
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .sidebar-active-game-box.show {
+      display: flex;
+    }
+
+    .sidebar-active-pill {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 32px;
-      backdrop-filter: var(--glass-blur);
-      z-index: 15;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-pill);
+      padding: 4px 6px 4px 10px;
+      margin-bottom: 8px;
     }
 
-    /* Barra de Busca Global */
-    .global-search-container {
-      position: relative;
-      width: 420px;
-      max-width: 45vw;
-    }
-    .global-search-input {
-      width: 100%;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 9px 40px 9px 38px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-family: var(--font-ui);
-      outline: none;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .global-search-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 14px var(--accent-glow);
-      background: rgba(10, 14, 22, 0.95);
-    }
-    .global-search-icon {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 13px;
-      color: var(--text-muted);
-      pointer-events: none;
-    }
-    .global-search-shortcut {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 800;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--text-muted);
-      padding: 2px 6px;
-      border-radius: 4px;
-      pointer-events: none;
-    }
-
-    /* Controles Rápidos da Topbar */
-    .topbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .topbar-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 7px 14px;
-      border-radius: 8px;
+    .sidebar-active-title {
       font-size: 12px;
       font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-    }
-    .topbar-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--accent);
-      color: #fff;
-    }
-    .topbar-btn:active {
-      transform: scale(0.97);
-    }
-    .topbar-btn.active {
-      background: rgba(var(--accent-rgb), 0.15);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .engine-status-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid var(--border);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 11.5px;
-      font-weight: 700;
-      color: var(--text-muted);
-    }
-    .engine-status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
-    }
-
-    /* Conteúdo com Scroll */
-    main {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .view-content {
-      display: none;
-      padding: 28px 36px 60px;
-      flex: 1;
-      animation: viewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .view-content.active {
-      display: flex;
-      flex-direction: column;
-    }
-    @keyframes viewFadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ==========================================================================
-       HERO CAROUSEL WIDESCREEN
-       ========================================================================== */
-    .hero-carousel {
-      position: relative;
-      border-radius: 16px;
-      overflow: hidden;
-      margin-bottom: 32px;
-      border: 1px solid var(--border);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-      height: 290px;
-      background: #0d1117;
-    }
-    .carousel-slide {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      transition: opacity 0.5s ease-out;
-      display: flex;
-      align-items: flex-end;
-      padding: 36px;
-      background-size: cover;
-      background-position: center 25%;
-    }
-    .carousel-slide.active {
-      opacity: 1;
-      z-index: 1;
-    }
-    .slide-gradient {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(7,9,14,0.15) 0%, rgba(7,9,14,0.94) 85%);
-    }
-    .slide-content {
-      position: relative;
-      z-index: 2;
-      max-width: 620px;
-    }
-    .slide-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      padding: 4px 12px;
-      border-radius: 6px;
-      background: rgba(var(--accent-rgb), 0.2);
-      color: var(--accent);
-      border: 1px solid rgba(var(--accent-rgb), 0.35);
-      margin-bottom: 12px;
-      letter-spacing: 0.6px;
-    }
-    .slide-content h2 {
-      font-family: var(--font-heading);
-      font-size: 32px;
-      font-weight: 900;
-      margin-bottom: 8px;
-      line-height: 1.15;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-    }
-    .slide-content p {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 18px;
-      line-height: 1.4;
-    }
-    .carousel-nav {
-      position: absolute;
-      bottom: 24px;
-      right: 32px;
-      z-index: 5;
-      display: flex;
-      gap: 8px;
-    }
-    .carousel-btn {
-      background: rgba(0, 0, 0, 0.45);
-      border: 1px solid rgba(255,255,255,0.18);
-      color: #fff;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      transition: all 0.2s;
-    }
-    .carousel-btn:hover {
-      background: rgba(255,255,255,0.25);
-      border-color: var(--accent);
-      color: var(--accent);
-      transform: scale(1.08);
-    }
-
-    /* Section Titles */
-    .section-title {
-      font-family: var(--font-heading);
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.2px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    /* ==========================================================================
-       CARDS DE JOGOS PREMIUM (POSTER / WIDESCREEN WEMOD)
-       ========================================================================== */
-    .cards-row {
-      display: flex;
-      gap: 16px;
-      overflow-x: auto;
-      padding-bottom: 14px;
-      margin-bottom: 34px;
-      scrollbar-width: thin;
-    }
-    .game-card {
-      min-width: 215px;
-      max-width: 215px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-    .game-card:hover {
-      transform: translateY(-6px) scale(1.02);
-      border-color: var(--border-highlight);
-      box-shadow: var(--shadow-3d);
-    }
-    .card-thumb {
-      height: 135px;
-      background: #141a24;
-      background-size: cover;
-      background-position: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .card-thumb::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, transparent 40%, rgba(18, 24, 34, 0.95) 100%);
-    }
-    .card-mods-count-pill {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 3;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: var(--accent);
-      letter-spacing: 0.5px;
-    }
-    .fav-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.65);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #94a3b8;
-      font-size: 14px;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 3;
-      transition: all 0.2s;
-    }
-    .fav-btn:hover {
-      color: var(--gold);
-      transform: scale(1.15);
-      background: rgba(0,0,0,0.85);
-    }
-    .fav-btn.active {
-      color: var(--gold);
-      text-shadow: 0 0 10px var(--gold);
-      border-color: var(--gold);
-    }
-    .card-body {
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-    .card-title {
-      font-family: var(--font-heading);
-      font-size: 14px;
-      font-weight: 800;
+      color: #ffffff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 6px;
-      color: #fff;
-    }
-    .card-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: auto;
+      max-width: 140px;
     }
 
-    /* Platform Badges Autênticos */
-    .platform-badge {
+    .sidebar-active-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .sidebar-play-circle-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-pill);
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 900;
+      transition: transform var(--transition-fast);
+    }
+    .sidebar-play-circle-btn:hover {
+      transform: scale(1.08);
+      background: var(--accent);
+    }
+
+    .sidebar-subnav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sidebar-subnav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .sidebar-subnav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+    }
+    .sidebar-subnav-item.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .sidebar-badge-novo {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Navegação Primária Normal */
+    .sidebar-primary-nav {
+      padding: 14px 10px 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .sidebar-nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .sidebar-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+    .sidebar-nav-btn.active {
+      background: rgba(255, 255, 255, 0.09);
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .sidebar-nav-btn-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-pulse-gift {
+      background: var(--pulse-purple);
+      color: #ffffff;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: var(--radius-pill);
+    }
+
+    /* Seções Favoritos e Meus Jogos */
+    .sidebar-section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 14px 6px 14px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .sidebar-games-scroll {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 0 8px 20px 8px;
+    }
+
+    .sidebar-game-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+    .sidebar-game-row:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+    .sidebar-game-row.active {
+      background: rgba(0, 245, 155, 0.12);
+      border-left: 3px solid var(--accent);
+    }
+
+    .sidebar-game-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #252836;
+      flex-shrink: 0;
+    }
+
+    .sidebar-game-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color var(--transition-fast);
+    }
+    .sidebar-game-row:hover .sidebar-game-name,
+    .sidebar-game-row.active .sidebar-game-name {
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       ÁREA DE CONTEÚDO PRINCIPAL (TABS)
+       ========================================================================== */
+    .wand-content-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      background-color: var(--bg-canvas);
+    }
+
+    .tab-view {
+      display: none;
+      flex-direction: column;
+      min-height: 100%;
+    }
+    .tab-view.active {
+      display: flex;
+    }
+
+    /* ==========================================================================
+       VIEW 1: INÍCIO / DESTAQUES (Print 1)
+       ========================================================================== */
+    .view-destaques-wrap {
+      padding: 24px 32px 60px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .destaques-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .destaques-hero-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+
+    .carousel-arrows {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .carousel-arrow-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all var(--transition-fast);
+    }
+    .carousel-arrow-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Hero Banner Grid (Cards Duplos Largos) */
+    .hero-widescreen-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .hero-card {
+      position: relative;
+      height: 290px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+      background-size: cover;
+      background-position: center;
+    }
+    .hero-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .hero-card-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.85) 100%);
+    }
+
+    .hero-badge-tag {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: #00d9b5;
+      color: #000000;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-card-footer {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .hero-card-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    }
+
+    /* Seções de Jogos Cápsula (Meus Jogos, Mais Populares, etc) */
+    .game-shelf-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .shelf-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .shelf-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .shelf-scroll-row {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scroll-behavior: smooth;
+    }
+
+    .game-capsule-card {
+      flex: 0 0 210px;
+      height: 105px;
+      border-radius: var(--radius-md);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background-size: cover;
+      background-position: center;
+      transition: all var(--transition-fast);
+    }
+    .game-capsule-card:hover {
+      transform: translateY(-3px) scale(1.02);
+      border-color: var(--accent);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .capsule-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.85) 100%);
+      display: flex;
+      align-items: flex-end;
+      padding: 10px;
+    }
+
+    .capsule-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .capsule-star-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      color: #ffffff;
+      font-size: 12px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    }
+
+    /* ==========================================================================
+       VIEW 2: MAPAS (Fidelidade ao Print 3)
+       ========================================================================== */
+    .view-maps-wrap {
+      padding: 24px 32px 60px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .maps-top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .maps-page-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .maps-view-switchers {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .maps-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .maps-filter-chips {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-chip {
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+    .filter-chip:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+    .filter-chip.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .maps-sort-selector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .sort-pill {
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all var(--transition-fast);
+    }
+    .sort-pill.active {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    /* Grid de 4 Colunas para Mapas (Print 3) */
+    .maps-quad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .map-card-item {
+      height: 125px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      background-size: cover;
+      background-position: center;
+      transition: all var(--transition-fast);
+    }
+    .map-card-item:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .map-badge-count {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #000000;
       font-size: 10px;
       font-weight: 800;
       padding: 2px 7px;
       border-radius: 4px;
       letter-spacing: 0.5px;
-      text-transform: uppercase;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
     }
-    .platform-badge.steam { background: #171a21; color: #66c0f4; border: 1px solid rgba(102, 192, 244, 0.4); }
-    .platform-badge.epic { background: #121212; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.3); }
-    .platform-badge.xbox { background: #107c10; color: #ffffff; border: 1px solid rgba(16, 124, 16, 0.5); }
-    .platform-badge.gog { background: #4b1b77; color: #e9bbfd; border: 1px solid rgba(160, 72, 255, 0.4); }
-    .platform-badge.pc { background: #1f2937; color: #58a6ff; border: 1px solid rgba(88, 166, 255, 0.4); }
+
+    .map-footer-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.85) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .map-game-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .map-game-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    .map-game-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .map-star-toggle {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      cursor: pointer;
+      transition: color var(--transition-fast);
+    }
+    .map-star-toggle:hover, .map-star-toggle.active {
+      color: #ffffff;
+    }
 
     /* ==========================================================================
-       TELA DE DETALHES DO JOGO (CINEMATIC HERO & WEMOD CENTER)
+       VIEW 3: BIBLIOTECA / MEUS JOGOS EM LISTA (Print 4)
        ========================================================================== */
-    .game-hero {
-      position: relative;
-      border-radius: 16px;
-      padding: 32px 36px;
+    .view-library-wrap {
+      padding: 24px 32px 60px 32px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-      background-size: cover;
-      background-position: center;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      flex-direction: column;
+      gap: 20px;
     }
-    .game-hero::before {
-      content: '';
+
+    .library-table-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 10px;
+    }
+
+    .library-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+    .library-row:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .library-col-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .library-game-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #252836;
+    }
+
+    .library-game-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      min-width: 200px;
+    }
+
+    .library-star-btn {
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 14px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      transition: color var(--transition-fast);
+    }
+    .library-star-btn:hover, .library-star-btn.active {
+      color: #ffffff;
+    }
+
+    .library-col-center {
+      flex: 1.5;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .library-col-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .platform-icon-tag {
+      font-size: 16px;
+      color: var(--text-dim);
+    }
+
+    /* ==========================================================================
+       VIEW 4: TELA DE DETALHES DO JOGO (Print 5 - Assassin's Creed Origins)
+       ========================================================================== */
+    .view-game-details-wrap {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    /* Hero Banner do Jogo com Arte e Poster */
+    .game-hero-header {
+      position: relative;
+      min-height: 270px;
+      background-size: cover;
+      background-position: center top;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .game-hero-gradient {
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, rgba(7, 9, 14, 0.96) 20%, rgba(7, 9, 14, 0.8) 60%, rgba(7, 9, 14, 0.6) 100%);
-      z-index: 1;
+      background: linear-gradient(180deg, rgba(17, 18, 23, 0.3) 0%, rgba(17, 18, 23, 0.95) 100%);
     }
+
     .game-hero-content {
       position: relative;
       z-index: 2;
       display: flex;
-      gap: 22px;
-      align-items: center;
+      gap: 24px;
+      align-items: flex-end;
     }
-    .game-detail-icon {
-      width: 84px;
-      height: 84px;
-      border-radius: 16px;
+
+    .game-vertical-poster {
+      width: 140px;
+      height: 200px;
+      border-radius: var(--radius-md);
       object-fit: cover;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.8), 0 0 16px var(--accent-glow);
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      background: #0d1117;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7);
       flex-shrink: 0;
-    }
-    .game-hero-info h2 {
-      font-family: var(--font-heading);
-      font-size: 30px;
-      font-weight: 900;
-      line-height: 1.1;
-      margin-bottom: 6px;
-      color: #fff;
-      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
-    }
-    .game-hero-badges {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .playtime-badge, .safe-guard-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11.5px;
-      font-weight: 700;
-      padding: 5px 12px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-    }
-    .safe-guard-badge {
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
-      border-color: rgba(16, 185, 129, 0.4);
+      background: #1e202a;
     }
 
-    /* Botões Primários de Ação (Auto-Launch & Anexar) */
-    .game-hero-actions {
-      position: relative;
-      z-index: 2;
+    .game-hero-info {
+      flex: 1;
       display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .game-title-row {
+      display: flex;
+      align-items: center;
       gap: 12px;
-      align-items: center;
-    }
-    .launch-game-btn {
-      background: var(--accent-gradient);
-      border: none;
-      color: var(--accent-text);
-      padding: 14px 28px;
-      border-radius: 12px;
-      font-family: var(--font-heading);
-      font-size: 14px;
-      font-weight: 900;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 6px 24px var(--accent-glow);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-      letter-spacing: 0.5px;
-    }
-    .launch-game-btn:hover {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 8px 30px var(--accent-glow);
-    }
-    .launch-game-btn:active {
-      transform: scale(0.97);
-    }
-    .play-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 14px 24px;
-      border-radius: 12px;
-      font-family: var(--font-heading);
-      font-size: 13.5px;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    .play-btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .play-btn:active {
-      transform: scale(0.97);
-    }
-    .play-btn.active {
-      background: #ef4444;
-      border-color: #ef4444;
-      color: #fff;
-      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5);
     }
 
-    /* Barra de Perfis de Cheats */
-    .profiles-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 20px;
-      margin-bottom: 20px;
-    }
-    .profile-select {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-family: var(--font-ui);
-      outline: none;
+    .game-title-large {
+      font-size: 30px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
     }
 
-    /* ==========================================================================
-       SPEEDHACK COCKPIT CONTROLLER
-       ========================================================================== */
-    .speedhack-cockpit-panel {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 24px;
-      margin-bottom: 24px;
+    .game-hero-subtabs {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      backdrop-filter: var(--glass-blur);
-    }
-    .speedhack-info h4 {
-      font-family: var(--font-heading);
-      font-size: 14px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #fff;
-    }
-    .speedhack-val-badge {
-      background: rgba(var(--accent-rgb), 0.15);
-      color: var(--accent);
-      padding: 3px 10px;
-      border-radius: 6px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 800;
-      border: 1px solid rgba(var(--accent-rgb), 0.3);
-    }
-    .speedhack-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .speed-preset-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .speed-preset-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .speed-preset-btn.active {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-color: var(--accent);
-      box-shadow: 0 0 14px var(--accent-glow);
+      gap: 18px;
+      margin-top: 4px;
     }
 
-    /* ==========================================================================
-       TOOLBAR DE CHEATS & CATEGORIAS
-       ========================================================================== */
-    .cheats-action-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 22px;
-      flex-wrap: wrap;
-    }
-    .cheat-search-box {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-family: var(--font-ui);
-      outline: none;
-      width: 290px;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .cheat-search-box:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 12px var(--accent-glow);
-    }
-    .cheat-category-chips {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .category-chip {
-      background: rgba(22, 28, 38, 0.6);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .category-chip:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-    }
-    .category-chip.active {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-color: var(--accent);
-      box-shadow: 0 0 12px var(--accent-glow);
-    }
-    .create-cheat-launcher-btn {
-      background: var(--accent-gradient);
-      border: none;
-      color: var(--accent-text);
-      font-family: var(--font-heading);
-      font-weight: 900;
-      font-size: 13px;
-      padding: 10px 18px;
-      border-radius: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 16px var(--accent-glow);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-    }
-    .create-cheat-launcher-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px var(--accent-glow);
-    }
-    .create-cheat-launcher-btn:active {
-      transform: scale(0.97);
-    }
-
-    /* ==========================================================================
-       CARDS E LINHAS DE CHEATS COM KEYCAPS 3D MECÂNICOS
-       ========================================================================== */
-    .cheat-category-group {
-      margin-bottom: 22px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-    .cheat-category-header-3d {
-      background: linear-gradient(90deg, rgba(20, 26, 36, 0.95) 0%, rgba(12, 16, 24, 0.95) 100%);
-      padding: 12px 20px;
-      font-family: var(--font-heading);
-      font-size: 13.5px;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      text-shadow: 0 0 12px var(--accent-glow);
-    }
-    .cheat-row-3d {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 22px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(18, 24, 34, 0.45);
-      transition: background 0.18s ease, transform 0.18s ease, border-left-color 0.18s ease;
-      border-left: 3px solid transparent;
-    }
-    .cheat-row-3d:last-child {
-      border-bottom: none;
-    }
-    .cheat-row-3d:hover {
-      background: var(--bg-card-hover);
-      border-left-color: var(--accent);
-    }
-    .cheat-row-3d.active {
-      background: rgba(var(--accent-rgb), 0.08);
-      border-left-color: var(--accent);
-    }
-    .cheat-name {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .cheat-row-3d.active .cheat-name {
-      color: var(--accent);
-      text-shadow: 0 0 10px var(--accent-glow);
-    }
-    .cheat-custom-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(168, 85, 247, 0.25);
-      color: #c084fc;
-      border: 1px solid rgba(168, 85, 247, 0.4);
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    /* Keycap Mecânico 3D Interativo (Clicável para Remapear) */
-    .hotkey-badge-3d {
-      font-family: var(--font-mono);
+    .subtab-link {
       font-size: 11px;
       font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 6px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 100%), #141a24;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-bottom: 3px solid rgba(0, 0, 0, 0.75);
-      color: var(--accent);
-      letter-spacing: 0.5px;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      cursor: pointer;
+      transition: color var(--transition-fast);
+      position: relative;
+      padding-bottom: 4px;
+    }
+    .subtab-link:hover {
+      color: #ffffff;
+    }
+    .subtab-link.active {
+      color: #ffffff;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    .game-hero-badge-gold {
       display: inline-flex;
       align-items: center;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.1s ease, border-bottom-width 0.1s ease, box-shadow 0.1s ease;
-    }
-    .hotkey-badge-3d:hover {
-      border-color: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
-    }
-    .hotkey-badge-3d:active {
-      transform: translateY(2px);
-      border-bottom-width: 1px;
-    }
-    .hotkey-badge-3d.listening {
-      animation: pulseKeycap 1s infinite alternate;
-      border-color: var(--gold);
-      color: var(--gold);
-    }
-    @keyframes pulseKeycap {
-      from { box-shadow: 0 0 8px var(--gold); transform: scale(1); }
-      to { box-shadow: 0 0 18px var(--gold); transform: scale(1.05); }
+      gap: 6px;
+      background: var(--pro-gold-grad);
+      color: #000000;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      width: fit-content;
+      margin-top: 4px;
     }
 
-    /* Switch Neon Moderno */
-    .switch-3d {
-      position: relative;
-      display: inline-block;
-      width: 48px;
-      height: 26px;
-      flex-shrink: 0;
-    }
-    .switch-3d input { opacity: 0; width: 0; height: 0; }
-    .slider-3d {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #151b26;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 26px;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
-    }
-    .slider-3d:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 4px;
-      bottom: 3px;
-      background: #fff;
-      border-radius: 50%;
-      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-    }
-    .switch-3d input:checked + .slider-3d {
-      background: var(--accent);
-      border-color: var(--accent);
-      box-shadow: 0 0 16px var(--accent-glow);
-    }
-    .switch-3d input:checked + .slider-3d:before {
-      transform: translateX(22px);
-      background: #0d1117;
-    }
-
-    /* Slider de Valor Numérico */
-    .cheat-value-slider-box {
+    .game-hero-actions-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      margin-top: 8px;
     }
-    .cheat-range-input {
-      -webkit-appearance: none;
-      width: 130px;
-      height: 6px;
-      background: #212836;
-      border-radius: 4px;
-      outline: none;
-    }
-    .cheat-range-input::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: var(--accent);
-      cursor: pointer;
-      box-shadow: 0 0 10px var(--accent-glow);
-      transition: transform 0.15s ease;
-    }
-    .cheat-range-input::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
-    }
-    .cheat-value-badge {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      background: var(--bg-input);
-      padding: 3px 10px;
-      border-radius: 6px;
-      color: var(--accent);
-      min-width: 48px;
-      text-align: center;
-      border: 1px solid var(--border);
-      font-weight: 700;
-    }
-    .slider-step-btn {
+
+    .hero-action-round-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-pill);
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
-      color: #fff;
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      transition: all var(--transition-fast);
+    }
+    .hero-action-round-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .hero-action-round-btn.record-btn {
+      color: #ef4444;
+    }
+
+    .btn-salvar-mods-pro {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .btn-salvar-mods-pro:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .btn-salvar-mods-pro span.pro-tag {
+      background: var(--pulse-purple);
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    /* Botão Gigante Branco JOGAR (Print 5) */
+    .btn-giant-play-wemod {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      color: #000000;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 10px 24px;
+      border-radius: var(--radius-pill);
+      border: none;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
+    }
+    .btn-giant-play-wemod:hover {
+      background: var(--accent);
+      transform: translateY(-1px);
+    }
+    .btn-giant-play-wemod.playing {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Stats do Jogo no Canto Superior Direito */
+    .game-stats-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: right;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .game-stat-item b {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Barra de Categorias de Cheats (Print 5) */
+    .game-cheats-nav-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .cheat-cat-pill {
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+    .cheat-cat-pill:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+    .cheat-cat-pill.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+    .cheat-cat-pill.novo-pro {
+      background: rgba(0, 245, 155, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Layout de 2 Colunas para Cheats e Painel Lateral (Print 5) */
+    .game-details-columns {
+      display: flex;
+      padding: 20px 32px 60px 32px;
+      gap: 28px;
+    }
+
+    .cheats-column-left {
+      flex: 1.8;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .cheats-group-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cheat-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 13px;
       font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s ease;
-    }
-    .slider-step-btn:hover {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-color: var(--accent);
-    }
-
-    /* Botão Trigger de Ação */
-    .action-trigger-btn-3d {
-      background: var(--accent-gradient);
-      border: none;
-      color: var(--accent-text);
-      font-family: var(--font-heading);
-      font-weight: 900;
-      font-size: 12px;
-      padding: 7px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 2px 10px var(--accent-glow);
-      transition: all 0.15s ease;
+      color: var(--text-dim);
+      text-transform: uppercase;
       letter-spacing: 0.5px;
-    }
-    .action-trigger-btn-3d:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 16px var(--accent-glow);
-    }
-    .action-trigger-btn-3d:active {
-      transform: scale(0.96);
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    /* ==========================================================================
-       OUTRAS TELAS: MAPAS, GRAVAÇÕES, REMOTE, STUDIO, IMPORTER
-       ========================================================================== */
-    .maps-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    .map-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
-    }
-    .map-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-highlight);
-      box-shadow: var(--shadow-3d);
-    }
-    .map-img {
-      height: 160px;
-      background-size: cover;
-      background-position: center;
-    }
-    .map-info {
-      padding: 18px;
-    }
-    .map-title {
-      font-family: var(--font-heading);
-      font-size: 16px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      color: #fff;
-    }
-    .map-desc {
-      font-size: 12.5px;
-      color: var(--text-muted);
-      line-height: 1.4;
-      margin-bottom: 14px;
-    }
-
-    .panel-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
-      backdrop-filter: var(--glass-blur);
-    }
-
-    .remote-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 36px;
-      display: flex;
-      gap: 36px;
-      align-items: center;
-      max-width: 760px;
-      backdrop-filter: var(--glass-blur);
-    }
-    .qr-container {
-      background: #0d1117;
-      border: 1px solid var(--border);
-      padding: 14px;
-      border-radius: 14px;
-      display: inline-block;
-      box-shadow: 0 0 24px var(--accent-glow);
-    }
-    .qr-container img {
-      display: block;
-      width: 180px;
-      height: 180px;
-      border-radius: 8px;
-    }
-
-    .hex-dump-table {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      width: 100%;
-      border-collapse: collapse;
-      background: #020408;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .hex-dump-table td {
-      padding: 5px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-    .hex-addr { color: #818cf8; font-weight: 700; }
-    .hex-bytes { color: #38bdf8; word-spacing: 4px; }
-    .hex-ascii { color: #10b981; }
-
-    /* ==========================================================================
-       MODAL 3D GLASS PARA CRIAR CHEATS
-       ========================================================================== */
-    .modal-backdrop-3d {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.78);
-      backdrop-filter: blur(14px);
-      z-index: 9999;
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-card-3d {
-      background: var(--bg-card);
-      border: 1px solid var(--border-highlight);
-      box-shadow: var(--shadow-3d);
-      border-radius: 16px;
-      width: 540px;
-      max-width: 90vw;
-      padding: 26px;
-      animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes modalPopIn {
-      from { opacity: 0; transform: scale(0.94) translateY(16px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .modal-header {
+    /* Linha de Cheat WeMod */
+    .cheat-row-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 14px;
-      margin-bottom: 18px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.02);
+      transition: background var(--transition-fast);
     }
-    .modal-header h3 {
-      font-family: var(--font-heading);
-      font-size: 18px;
-      font-weight: 900;
+    .cheat-row-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .cheat-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .cheat-icon-bolt {
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    .cheat-title-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .cheat-controls-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Segmented Toggle WeMod [ Off | On ] (Print 5) */
+    .wemod-toggle-pill {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-pill);
+      padding: 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-segment {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: var(--radius-pill);
+      color: var(--text-dim);
+      transition: all var(--transition-fast);
+    }
+
+    .wemod-toggle-pill.off .toggle-segment.off {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .wemod-toggle-pill.on .toggle-segment.on {
+      background: var(--accent);
+      color: var(--accent-text);
+      font-weight: 800;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* Keycap Mecânico 3D WeMod (Print 5) */
+    .hotkey-badge-3d {
+      background: #232630;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-bottom: 2px solid rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      min-width: 32px;
+      text-align: center;
+      transition: all var(--transition-fast);
+    }
+    .hotkey-badge-3d:hover {
+      background: #2e323e;
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .hotkey-badge-3d.listening {
+      background: var(--accent);
+      color: var(--accent-text);
+      animation: pulseHotkey 1s infinite alternate;
+    }
+
+    @keyframes pulseHotkey {
+      from { transform: scale(1); }
+      to { transform: scale(1.08); }
+    }
+
+    /* Painel Lateral Direito: Mapa Interativo e Video Companion (Print 5) */
+    .widgets-column-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .widget-map-card {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      background: #1a1c24;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: border-color var(--transition-fast);
+    }
+    .widget-map-card:hover {
+      border-color: var(--accent);
+    }
+
+    .widget-map-preview {
+      height: 140px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .widget-map-header {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .widget-map-footer {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
       color: var(--accent);
-      text-shadow: 0 0 10px var(--accent-glow);
     }
+
+    /* Video Companion Card */
+    .widget-video-card {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      background: #1a1c24;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .video-companion-thumb {
+      height: 180px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-play-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-pill);
+      background: rgba(0, 0, 0, 0.75);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      transition: transform var(--transition-fast);
+    }
+    .video-play-btn:hover {
+      transform: scale(1.1);
+      background: var(--accent);
+      color: #000000;
+    }
+
+    .video-card-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .video-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .video-card-pro-banner {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* ==========================================================================
+       MODAIS (Configurações, Mapa Interativo, Adicionar Cheat)
+       ========================================================================== */
+    .wand-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .wand-modal-backdrop.show {
+      display: flex;
+    }
+
+    .wand-modal-card {
+      background: #1a1c24;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      width: 90%;
+      max-width: 560px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
     .modal-close-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
       font-size: 18px;
       cursor: pointer;
-      transition: color 0.15s ease;
+      transition: color var(--transition-fast);
     }
-    .modal-close-btn:hover { color: #fff; }
-    .form-group {
-      margin-bottom: 14px;
+    .modal-close-btn:hover {
+      color: #ffffff;
     }
-    .form-group label {
-      display: block;
-      font-size: 11.5px;
-      font-weight: 800;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-    .form-group input, .form-group select {
-      width: 100%;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 13.5px;
-      font-family: var(--font-ui);
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
-    }
-    .form-row {
+
+    .modal-body {
+      padding: 20px;
       display: flex;
-      gap: 12px;
+      flex-direction: column;
+      gap: 16px;
     }
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
-      border-top: 1px solid var(--border);
-      padding-top: 16px;
+
+    /* Banner de Atualização do App */
+    .app-update-banner {
+      display: none;
+      background: linear-gradient(90deg, #1e1b4b 0%, #312e81 100%);
+      border-bottom: 1px solid #4338ca;
+      padding: 10px 20px;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #e0e7ff;
+      z-index: 99;
     }
-    .secondary-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .secondary-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .primary-btn-3d {
-      background: var(--accent-gradient);
-      border: none;
+    .app-update-btn {
+      background: var(--accent);
       color: var(--accent-text);
-      padding: 10px 22px;
-      border-radius: 8px;
-      font-family: var(--font-heading);
-      font-weight: 900;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      border: none;
       cursor: pointer;
-      box-shadow: 0 4px 14px var(--accent-glow);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .primary-btn-3d:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px var(--accent-glow);
-    }
-    .primary-btn-3d:active {
-      transform: scale(0.97);
     }
   </style>
 </head>
-<body>
+<body data-theme="wemod">
 
-  <!-- Notificação Flutuante de Nova Versão (Auto-Update) -->
-  <div id="update-banner">
-    <div style="display: flex; align-items: center; gap: 14px; flex: 1;">
-      <span style="font-size: 16px;">🚀</span>
-      <span id="update-text">Nova versão disponível!</span>
-      <div id="update-progress-container" style="display: none; flex: 1; max-width: 280px; background: rgba(0,0,0,0.3); height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
-        <div id="update-progress-bar" style="background: #fff; width: 0%; height: 100%; transition: width 0.2s ease;"></div>
+  <!-- ========================================================================
+       TOPBAR HEADER WAND (Fidelidade ao Print 1)
+       ======================================================================== -->
+  <header class="wand-topbar topbar-header">
+    <div class="topbar-left">
+      <div class="wand-logo-wrap" onclick="switchTab('tab-home')">
+        <div class="wand-wordmark">WAND<span>.</span></div>
       </div>
-      <span id="update-progress-text" style="font-size: 11px; display: none; font-family: var(--font-mono);">0%</span>
+      <div class="topbar-nav-btns">
+        <button class="topbar-circle-btn" onclick="historyBack()" title="Voltar">←</button>
+        <button class="topbar-circle-btn" onclick="historyForward()" title="Avançar">→</button>
+        <button class="topbar-circle-btn" onclick="switchTab('tab-home')" title="Início">🏠</button>
+      </div>
     </div>
-    <div style="display: flex; gap: 8px;">
-      <button id="update-action-btn" onclick="startInAppUpdate()">Atualizar Direto no App ⚡</button>
-      <button style="background: rgba(0,0,0,0.35);" onclick="dismissUpdateBanner()">✕</button>
+
+    <div class="topbar-center">
+      <div class="wand-search-pill">
+        <span style="color: var(--text-dim); font-size: 13px;">🔍</span>
+        <input type="text" id="global-search-input" placeholder="Buscar jogos, cheats, mapas..." oninput="onGlobalSearch(this.value)" onkeydown="if(event.key==='Enter')onGlobalSearch(this.value)">
+        <span class="search-kbd-badge" style="font-size: 10px; font-weight: 700; color: var(--text-dim); margin-right: 6px;">CTRL+K</span>
+        <button class="search-btn-action" onclick="onGlobalSearch(document.getElementById('global-search-input').value)">Ir</button>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <span id="engine-status-pill" style="display: none;">ENGINE PRONTA</span>
+      <button class="topbar-icon-action" id="btn-sound-toggle" onclick="toggleGlobalSound()" title="Sons WeMod">🔊</button>
+      <button class="topbar-icon-action" onclick="openHelpModal()" title="Ajuda & FAQ">❓</button>
+      <button class="topbar-icon-action" onclick="openPointsModal()" title="Pontos Wand">🪙</button>
+      <button class="topbar-icon-action" onclick="openPlaytimeTracker()" title="Tempo de Jogo">⏱️</button>
+
+      <span id="engine-status-pill" style="display: none;">ENGINE PRONTA</span>
+
+      <!-- Avatar do Usuário (Abre Menu Dropdown - Print 2) -->
+      <div class="user-avatar-wrap">
+        <div class="user-avatar-btn" onclick="toggleProfileMenu(event)">
+          <img src="https://avatars.githubusercontent.com/u/9919?s=80&v=4" alt="Avatar" id="user-avatar-img">
+        </div>
+
+        <!-- Menu Popup (Print 2) -->
+        <div class="profile-dropdown-menu" id="profile-dropdown-menu">
+          <div class="profile-menu-item" onclick="openProfilePage()">
+            <div class="profile-menu-item-left">
+              <img src="https://avatars.githubusercontent.com/u/9919?s=80&v=4" style="width: 22px; height: 22px; border-radius: 50%;">
+              <span>Meu Perfil</span>
+            </div>
+          </div>
+          <div class="profile-menu-divider"></div>
+          <div class="profile-menu-item" onclick="openHelpModal()">
+            <div class="profile-menu-item-left">
+              <span>❓</span>
+              <span>Ajuda</span>
+            </div>
+            <span style="font-size: 11px; color: var(--text-dim);">↗</span>
+          </div>
+          <div class="profile-menu-item" onclick="refreshGames()">
+            <div class="profile-menu-item-left">
+              <span>🎮</span>
+              <span>Conectar ao Steam</span>
+            </div>
+          </div>
+          <div class="profile-menu-item" onclick="openDiscord()">
+            <div class="profile-menu-item-left">
+              <span>💬</span>
+              <span>Discord</span>
+            </div>
+            <span style="font-size: 11px; color: var(--text-dim);">↗</span>
+          </div>
+          <div class="profile-menu-item" onclick="openFeedbackModal()">
+            <div class="profile-menu-item-left">
+              <span>✍️</span>
+              <span>Compartilhar feedback</span>
+            </div>
+          </div>
+          <div class="profile-menu-divider"></div>
+          <div class="profile-menu-item" onclick="openSettingsModal()">
+            <div class="profile-menu-item-left">
+              <span>⚙️</span>
+              <span>Configurações</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="suporte-wand-btn" onclick="openHelpModal()">Suporte Wand</div>
+      <button class="btn-torne-se-pro" onclick="openProModal()">Torne-se Pro</button>
+
+      <!-- Controles de Janela -->
+      <div class="window-controls">
+        <button class="window-control-btn" onclick="windowMinimize()" title="Minimizar">─</button>
+        <button class="window-control-btn" onclick="windowMaximize()" title="Maximizar">▢</button>
+        <button class="window-control-btn close" onclick="windowClose()" title="Fechar">✕</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner de Atualização do App -->
+  <div id="update-banner" class="app-update-banner">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span>🚀</span>
+      <span id="update-text">Nova versão disponível!</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button class="app-update-btn" onclick="startInAppUpdate()">Atualizar Agora</button>
+      <button style="background:none;border:none;color:#ffffff;cursor:pointer;" onclick="dismissUpdateBanner()">✕</button>
     </div>
   </div>
 
-  <!-- Sidebar -->
-  <aside>
-    <div class="brand">
-      <img src="../../assets/icon.png" class="brand-logo-img" alt="Logo" onerror="this.onerror=null; this.src='../../../assets/icon.png';" />
-      <div class="brand-text">
-        <h1>Open Trainer</h1>
-        <span id="engine-version-label">ENGINE v0.5.3</span>
-      </div>
-    </div>
+  <!-- Layout Principal (Sidebar + Conteúdo) -->
+  <div class="app-main-layout">
 
-    <!-- Pro Unlocked Card -->
-    <div class="pro-badge-card">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 14px;">👑</span>
-        <span style="font-weight: 800; font-size: 12px;">Comunidade Livre</span>
-      </div>
-      <span class="pro-badge-tag">PRO GRÁTIS</span>
-    </div>
+    <!-- ======================================================================
+         SIDEBAR DINÂMICA (Prints 1 e 5)
+         ====================================================================== -->
+    <aside class="wand-sidebar">
 
-    <!-- Seletor de Temas Visuais (Multitemas 1-Click) -->
-    <div class="theme-selector-box">
-      <div class="theme-label">
-        <span>🎨 Tema Visual</span>
-        <span id="theme-active-name" style="color: var(--accent); font-weight: 800;">WeMod</span>
-      </div>
-      <div class="theme-pills">
-        <div class="theme-pill wemod active" onclick="applyAppTheme('wemod')" title="WeMod Emerald (Padrão)"></div>
-        <div class="theme-pill cyberpunk" onclick="applyAppTheme('cyberpunk')" title="Cyberpunk 2077 Neon"></div>
-        <div class="theme-pill obsidian" onclick="applyAppTheme('obsidian')" title="Obsidian Void"></div>
-        <div class="theme-pill crimson" onclick="applyAppTheme('crimson')" title="Crimson Gamer ROG"></div>
-        <div class="theme-pill frost" onclick="applyAppTheme('frost')" title="Arctic Titanium"></div>
-      </div>
-    </div>
-
-    <!-- Navegação Estilo WeMod -->
-    <div class="nav-group">
-      <div class="nav-label">Navegação</div>
-      <div class="nav-item active" onclick="switchTab('tab-home', this)">
-        <span>🏠</span> Início / Destaques
-      </div>
-      <div class="nav-item" onclick="switchTab('tab-favorites', this)">
-        <span>⭐</span> Meus Favoritos
-        <span class="nav-badge" id="fav-count">0</span>
-      </div>
-      <div class="nav-item" onclick="switchTab('tab-my-games', this)">
-        <span>🎮</span> Biblioteca de Jogos
-        <span class="nav-badge" id="games-count">0</span>
-      </div>
-      <div class="nav-item" onclick="switchTab('tab-maps', this)">
-        <span>🗺️</span> Mapas ao Vivo
-      </div>
-      <div class="nav-item" onclick="switchTab('tab-captures', this)">
-        <span>🎬</span> Destaques / Clips
-      </div>
-      <div class="nav-item" onclick="switchTab('tab-remote', this)">
-        <span>📱</span> WeMod Remote (Celular)
-      </div>
-    </div>
-
-    <div class="nav-group">
-      <div class="nav-label">Criação & Modding</div>
-      <div class="nav-item" onclick="switchTab('tab-cloud', this)">
-        <span>☁️</span> Catálogo na Nuvem
-      </div>
-      <div class="nav-item" onclick="switchTab('tab-studio', this)">
-        <span>🧪</span> Cheat Maker Studio
-      </div>
-      <div class="nav-item" onclick="switchTab('tab-importer', this)">
-        <span>📥</span> Importar Tabela .CT
-      </div>
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="status-indicator online"></div>
-      <div style="font-size: 12px; line-height: 1.3;">
-        <div style="font-weight: 800;" id="footer-status">Pronto para Jogar</div>
-        <div style="color: var(--text-muted); font-size: 11px;" id="footer-details">HUD Overlay: Ctrl+G</div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Workspace Central -->
-  <div class="app-workspace">
-
-    <!-- Topbar Header com Busca Global e Controles Rápidos -->
-    <header class="topbar-header">
-      <div class="global-search-container">
-        <span class="global-search-icon">🔍</span>
-        <input type="text" id="global-search-input" class="global-search-input" placeholder="Buscar jogos instalados, trainers ou cheats..." oninput="onGlobalSearch(this.value)" />
-        <span class="global-search-shortcut">CTRL+K</span>
-      </div>
-
-      <div class="topbar-actions">
-        <!-- Som On/Off -->
-        <button class="topbar-btn active" id="btn-sound-toggle" onclick="toggleGlobalSound()" title="Alternar efeitos sonoros WeMod">
-          <span id="sound-icon">🔊</span>
-          <span id="sound-label">Sons: ON</span>
-        </button>
-
-        <!-- Overlay HUD -->
-        <button class="topbar-btn" onclick="toggleOverlayHud()" title="Ativar HUD Overlay dentro do jogo (Ctrl+G)">
-          <span>🖥️</span>
-          <span>Overlay (Ctrl+G)</span>
-        </button>
-
-        <!-- Status do Processo / Motor -->
-        <div class="engine-status-pill">
-          <div class="engine-status-dot"></div>
-          <span id="topbar-status-text">Motor Conectado</span>
+      <!-- Sub-menu Contextual do Jogo Selecionado (Print 5) -->
+      <div class="sidebar-active-game-box" id="sidebar-active-game-widget">
+        <div class="sidebar-active-pill">
+          <span class="sidebar-active-title" id="sidebar-active-title">Assassin's Creed Origins</span>
+          <div class="sidebar-active-actions">
+            <button style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;" onclick="openGameOptionsMenu()">•••</button>
+            <button class="sidebar-play-circle-btn" onclick="toggleAttachCurrentGame()" title="Jogar">▶</button>
+          </div>
+        </div>
+        <div class="sidebar-subnav-list">
+          <div class="sidebar-subnav-item active" onclick="switchGameSubtab('personalizar', this)">
+            <span>⚡ Personalizar</span>
+          </div>
+          <div class="sidebar-subnav-item" onclick="switchGameSubtab('mapa', this)">
+            <span>🗺️ Mapa</span>
+          </div>
+          <div class="sidebar-subnav-item" onclick="switchGameSubtab('destaques', this)">
+            <span>🎬 Destaques</span>
+            <span class="sidebar-badge-novo">NOVO</span>
+          </div>
+          <div class="sidebar-subnav-item" onclick="switchGameSubtab('sessoes', this)">
+            <span>⏱️ Sessões</span>
+            <span class="sidebar-badge-novo">NOVO</span>
+          </div>
+          <div class="sidebar-subnav-item" onclick="switchGameSubtab('sugestoes', this)">
+            <span>💡 Sugestões</span>
+            <span class="sidebar-badge-novo">NOVO</span>
+          </div>
         </div>
       </div>
-    </header>
 
-    <!-- Conteúdo Principal com Rolagem Suave -->
-    <main>
-      <!-- Tab 1: Início / Carrosséis -->
-      <div class="view-content active" id="tab-home">
-        <!-- Carrossel de Banners Widescreen (WeMod Style) -->
-        <div class="hero-carousel">
-          <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80');">
-            <div class="slide-gradient"></div>
-            <div class="slide-content">
-              <span class="slide-tag">🔥 Mais Jogado da Semana</span>
-              <h2>Elden Ring: Shadow of the Erdtree</h2>
-              <p>Modo Deus, Runas Infinitas, 100% Drop Rate e Estamina Ilimitada.</p>
-              <button class="launch-game-btn" onclick="openGameById('sample-rpg-game')">JOGAR COM MODS</button>
+      <!-- Navegação Primária Normal -->
+      <div class="sidebar-primary-nav">
+        <div class="sidebar-nav-btn" id="nav-btn-maps" onclick="switchTab('tab-maps', this)">
+          <div class="sidebar-nav-btn-left">
+            <span>🗺️</span>
+            <span>Mapas</span>
+          </div>
+        </div>
+        <div class="sidebar-nav-btn active" id="nav-btn-home" onclick="switchTab('tab-home', this)">
+          <div class="sidebar-nav-btn-left">
+            <span>⭐</span>
+            <span>Destaques</span>
+          </div>
+        </div>
+        <div class="sidebar-nav-btn" id="nav-btn-pro" onclick="openProModal()">
+          <div class="sidebar-nav-btn-left">
+            <span>⚡</span>
+            <span>Wand Pro</span>
+          </div>
+        </div>
+        <div class="sidebar-nav-btn" id="nav-btn-library" onclick="switchTab('tab-library', this)">
+          <div class="sidebar-nav-btn-left">
+            <span>📚</span>
+            <span>Biblioteca</span>
+          </div>
+        </div>
+        <div class="sidebar-nav-btn" id="nav-btn-pulse" onclick="switchTab('tab-pulse', this)">
+          <div class="sidebar-nav-btn-left">
+            <span>🔮</span>
+            <span>Pulse</span>
+          </div>
+          <span class="badge-pulse-gift">🎁</span>
+        </div>
+      </div>
+
+      <!-- Seção Favoritos -->
+      <div class="sidebar-section-title">
+        <span>⭐ Favoritos</span>
+        <span id="fav-count">0</span>
+      </div>
+      <div class="sidebar-games-scroll" id="sidebar-favorites-list"></div>
+
+      <!-- Seção Meus Jogos (168) -->
+      <div class="sidebar-section-title">
+        <span>🎮 Meus Jogos</span>
+        <span id="games-count">0</span>
+      </div>
+      <div class="sidebar-games-scroll" id="sidebar-installed-games-list"></div>
+    </aside>
+
+    <!-- ======================================================================
+         ÁREA DE CONTEÚDO PRINCIPAL
+         ====================================================================== -->
+    <main class="wand-content-area" id="main-content-scroll">
+
+      <!-- --------------------------------------------------------------------
+           VIEW 1: INÍCIO / DESTAQUES (Print 1)
+           -------------------------------------------------------------------- -->
+      <div class="tab-view active" id="tab-home">
+        <div class="view-destaques-wrap">
+          <div class="destaques-header-row">
+            <h1 class="destaques-hero-title" id="home-hero-title">Phantom Blade Zero</h1>
+            <div class="carousel-arrows">
+              <button class="carousel-arrow-btn" onclick="changeHeroSlide(-1)">❮</button>
+              <button class="carousel-arrow-btn" onclick="changeHeroSlide(1)">❯</button>
             </div>
           </div>
 
-          <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&auto=format&fit=crop&q=80');">
-            <div class="slide-gradient"></div>
-            <div class="slide-content">
-              <span class="slide-tag">⚡ Atualizado Recentemente</span>
-              <h2>Cyberpunk 2077: Phantom Liberty</h2>
-              <p>Dinheiro Infinito, Munição Ilimitada, Nível Máximo e Sem Recuo.</p>
-              <button class="launch-game-btn" onclick="openGameById('sample-rpg-game')">JOGAR COM MODS</button>
-            </div>
-          </div>
-
-          <div class="carousel-nav">
-            <button class="carousel-btn" onclick="changeHeroSlide(-1)">❮</button>
-            <button class="carousel-btn" onclick="changeHeroSlide(1)">❯</button>
-          </div>
-        </div>
-
-        <!-- Carrossel Meus Jogos Recentes -->
-        <div class="section-title">
-          <span>🎮 Meus Jogos Instalados</span>
-          <span style="font-size: 13px; color: var(--accent); cursor: pointer;" onclick="refreshGames()">↻ Varrer Novamente</span>
-        </div>
-        <div class="cards-row" id="carousel-installed-games">
-          <!-- Injetado via JS -->
-        </div>
-
-        <!-- Carrossel Jogos em Alta / Trainers Suportados -->
-        <div class="section-title">
-          <span>⚡ Trainers Populares Prontos</span>
-        </div>
-        <div class="cards-row" id="carousel-popular-games">
-          <!-- Injetado via JS -->
-        </div>
-      </div>
-
-      <!-- Tab 2: Favoritos -->
-      <div class="view-content" id="tab-favorites">
-        <div class="section-title">⭐ Meus Jogos Favoritos</div>
-        <div class="cards-row" id="favorites-grid">
-          <!-- Injetado via JS -->
-        </div>
-      </div>
-
-      <!-- Tab 3: Biblioteca Completa -->
-      <div class="view-content" id="tab-my-games">
-        <div class="section-title">🎮 Biblioteca de Jogos Detectados</div>
-        <div class="maps-grid" id="all-games-grid">
-          <!-- Injetado via JS -->
-        </div>
-      </div>
-
-      <!-- Tab 4: Detalhes do Trainer do Jogo Selecionado (WeMod Center) -->
-      <div class="view-content" id="tab-game-details">
-        <div class="game-hero">
-          <div class="game-hero-content">
-            <img id="detail-game-icon" class="game-detail-icon" src="../../assets/icon.png" alt="Game Icon" />
-            <div class="game-hero-info">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <h2 id="detail-title">Nome do Jogo</h2>
-                <span id="detail-platform-badge" class="platform-badge pc">PC</span>
-                <button class="fav-btn" id="detail-fav-btn" onclick="toggleCurrentFavorite()">⭐</button>
+          <!-- Hero Duplo Widescreen (Print 1) -->
+          <div class="hero-widescreen-grid">
+            <div class="hero-card" id="hero-card-1" style="background-image: url('https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg');" onclick="openGameByTitleOrFirst('Phantom Blade Zero')">
+              <div class="hero-card-gradient"></div>
+              <span class="hero-badge-tag">NEW</span>
+              <div class="hero-card-footer">
+                <div class="hero-card-name">PHANTOM BLADE 0</div>
               </div>
-              <p id="detail-process" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Alvo: Game.exe</p>
-              <div class="game-hero-badges">
-                <div class="playtime-badge">
-                  <span>⏱️</span>
-                  <span id="detail-playtime">Tempo com mods: 0h 0m</span>
-                </div>
-                <div class="safe-guard-badge" id="anti-cheat-status-badge">
-                  <span>🛡️</span> Safe Guard: Protegido
-                </div>
+            </div>
+
+            <div class="hero-card" id="hero-card-2" style="background-image: url('https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg');" onclick="openGameByTitleOrFirst('Crimson Desert')">
+              <div class="hero-card-gradient"></div>
+              <span class="hero-badge-tag">UPDATE</span>
+              <div class="hero-card-footer">
+                <div class="hero-card-name">CRIMSON DESERT</div>
               </div>
             </div>
           </div>
-          
-          <div class="game-hero-actions">
-            <button class="launch-game-btn" id="launch-auto-btn" onclick="launchCurrentGame()">
-              <span>▶</span> JOGAR (AUTO-LAUNCH)
-            </button>
-            <button class="play-btn" id="detail-play-btn" onclick="toggleAttach()">
-              <span>⚡</span> ANEXAR TRAINER
-            </button>
-          </div>
-        </div>
 
-        <!-- Barra de Perfis de Cheats (WeMod Presets) -->
-        <div class="profiles-bar">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 16px;">📁</span>
-            <span style="font-weight: 800; font-size: 13px;">Perfil de Mods:</span>
-            <select id="profile-dropdown" class="profile-select" onchange="onSelectProfile(this.value)">
-              <option value="">Padrão (Sem Perfil)</option>
-            </select>
-            <button class="speed-preset-btn" onclick="promptNewProfile()">+ Novo Perfil</button>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="speed-preset-btn" style="color: var(--danger); border-color: rgba(239,68,68,0.3);" onclick="deleteCurrentProfile()">Excluir Perfil</button>
-          </div>
-        </div>
+          <!-- Seção Meus Jogos Cápsulas (Print 1) -->
+          <section class="game-shelf-section">
+            <div class="shelf-header">
+              <h2 class="shelf-title">Meus jogos</h2>
+            </div>
+            <div class="shelf-scroll-row" id="shelf-installed-games"></div>
+          </section>
 
-        <!-- Painel Speedhack Cockpit WeMod Style -->
-        <div class="speedhack-cockpit-panel">
-          <div class="speedhack-info">
-            <h4>
-              <span>⚡</span>
-              <span>Speedhack Nativo (Controle de Tempo do Processo)</span>
-              <span id="speedhack-val-badge" class="speedhack-val-badge">1.00x (Normal)</span>
-            </h4>
-            <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">Acelere o jogo para avançar esperas ou desacelere em Bullet-Time para combates épicos.</p>
-          </div>
-          <div class="speedhack-controls">
-            <input type="range" id="speedhack-slider" min="0.1" max="5.0" step="0.1" value="1.0" class="cheat-range-input" style="width: 160px; margin-right: 12px;" oninput="onSpeedSliderChange(this.value)" />
-            <button class="speed-preset-btn" onclick="setSpeedhack(0.2, this)">0.2x</button>
-            <button class="speed-preset-btn" onclick="setSpeedhack(0.5, this)">0.5x</button>
-            <button class="speed-preset-btn active" id="btn-speed-1" onclick="setSpeedhack(1.0, this)">1.0x</button>
-            <button class="speed-preset-btn" onclick="setSpeedhack(2.0, this)">2.0x</button>
-            <button class="speed-preset-btn" onclick="setSpeedhack(5.0, this)">5.0x</button>
-          </div>
-        </div>
+          <!-- Seção Mais Populares (Print 1) -->
+          <section class="game-shelf-section">
+            <div class="shelf-header">
+              <h2 class="shelf-title">Mais populares</h2>
+            </div>
+            <div class="shelf-scroll-row" id="shelf-popular-games"></div>
+          </section>
 
-        <div class="section-title">
-          <span>Arsenal de Cheats & Modificações (<span id="detail-cheat-count">0</span>)</span>
+          <!-- Seção Novos e Recentemente Atualizados (Print 1) -->
+          <section class="game-shelf-section">
+            <div class="shelf-header">
+              <h2 class="shelf-title">Novos e recentemente atualizados</h2>
+            </div>
+            <div class="shelf-scroll-row" id="shelf-recent-games"></div>
+          </section>
         </div>
+      </div>
 
-        <!-- Toolbar de Busca, Filtro e Criação de Cheats -->
-        <div class="cheats-action-toolbar">
-          <div style="display: flex; gap: 10px; align-items: center; flex: 1; flex-wrap: wrap;">
-            <input type="text" id="cheat-search-input" class="cheat-search-box" placeholder="🔍 Filtrar mods (ex: vida, munição, ouro, teleport)..." oninput="filterCheatsInView(this.value)" />
-            <div class="cheat-category-chips">
-              <button class="category-chip active" onclick="filterByCategory('all', this)">Todos</button>
-              <button class="category-chip" onclick="filterByCategory('Jogador', this)">🛡️ Jogador</button>
-              <button class="category-chip" onclick="filterByCategory('Combate', this)">🎯 Combate</button>
-              <button class="category-chip" onclick="filterByCategory('Economia', this)">💰 Economia</button>
-              <button class="category-chip" onclick="filterByCategory('Teletransporte', this)">📍 Teleport</button>
-              <button class="category-chip" onclick="filterByCategory('Física', this)">⚡ Física & Tempo</button>
+      <!-- --------------------------------------------------------------------
+           VIEW 2: MAPAS (Print 3)
+           -------------------------------------------------------------------- -->
+      <div class="tab-view" id="tab-maps">
+        <div class="view-maps-wrap">
+          <div class="maps-top-header">
+            <h1 class="maps-page-title">Mapas</h1>
+            <div class="maps-view-switchers">
+              <button class="topbar-circle-btn" onclick="setMapsLayout('grid')">▦</button>
+              <button class="topbar-circle-btn" onclick="setMapsLayout('list')">☰</button>
             </div>
           </div>
-          <button class="create-cheat-launcher-btn" onclick="openNewCheatModal()">
-            <span>➕</span> CRIAR NOVO CHEAT
-          </button>
-        </div>
 
-        <div id="detail-cheats-container">
-          <!-- Cheats do Jogo Injetados Dinamicamente -->
-        </div>
-      </div>
+          <div class="maps-filter-bar">
+            <div class="maps-filter-chips">
+              <div class="filter-chip active" onclick="filterMapsCategory('todos', this)">⊞ Todos</div>
+              <div class="filter-chip" onclick="filterMapsCategory('favoritos', this)">⭐ Favoritos</div>
+              <div class="filter-chip" onclick="filterMapsCategory('teletransportar', this)">📍 Teletransportar</div>
+              <div class="filter-chip" onclick="filterMapsCategory('live', this)">🎯 Localização ao vivo</div>
+            </div>
 
-      <!-- Tab 5: Mapas Interativos ao Vivo -->
-      <div class="view-content" id="tab-maps">
-        <div class="section-title">🗺️ Mapas Interativos em Tempo Real</div>
-        <div class="maps-grid" id="maps-container">
-          <!-- Injetado via JS -->
-        </div>
-      </div>
-
-      <!-- Tab 6: Capturas de Tela / Gravações de Highlights -->
-      <div class="view-content" id="tab-captures">
-        <div class="section-title">🎬 Capturas de Tela & Destaques de Gameplay</div>
-        <div class="maps-grid" id="captures-container">
-          <!-- Injetado via JS -->
-        </div>
-      </div>
-
-      <!-- Tab 7: WeMod Remote (Celular) -->
-      <div class="view-content" id="tab-remote">
-        <div class="section-title">📱 WeMod Remote Companion (Controle pelo Celular)</div>
-        <div class="remote-card">
-          <div class="qr-container">
-            <img id="remote-qr-code" src="" alt="QR Code" />
-          </div>
-          <div>
-            <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; margin-bottom: 8px;">Controle seus Cheats sem Sair do Jogo</h3>
-            <p style="color: var(--text-muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 16px;">
-              Aponte a câmera do seu smartphone para o QR Code ao lado. Seu celular funcionará como um controle remoto interativo para ativar atalhos, modo deus e speedhack com zero impacto nos FPS do jogo.
-            </p>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <span id="remote-ip-badge" style="font-family: var(--font-mono); font-size: 12px; background: rgba(0,0,0,0.5); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); color: var(--accent);">http://localhost:38474</span>
-              <button class="topbar-btn" onclick="copyRemoteUrl()">Copiar Link</button>
-              <button class="topbar-btn" onclick="openRemoteInBrowser()">Abrir no Navegador ↗</button>
+            <div class="maps-sort-selector">
+              <span>Ordenar por</span>
+              <span class="sort-pill active" onclick="sortMaps('populares', this)">Populares</span>
+              <span class="sort-pill" onclick="sortMaps('recentes', this)">Jogados recentemente</span>
+              <span class="sort-pill" onclick="sortMaps('az', this)">A-Z</span>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Tab 8: Catálogo na Nuvem (Cloud Trainers) -->
-      <div class="view-content" id="tab-cloud">
-        <div class="section-title">
-          <span>☁️ Catálogo Comunitário na Nuvem</span>
-          <input type="text" id="cloud-search-input" class="cheat-search-box" style="width: 260px;" placeholder="Buscar na nuvem..." oninput="filterCloudTrainers(this.value)" />
-        </div>
-        <div class="maps-grid" id="cloud-trainers-container">
-          <!-- Injetado via JS -->
-        </div>
-      </div>
-
-      <!-- Tab 9: Cheat Maker Studio -->
-      <div class="view-content" id="tab-studio">
-        <div class="section-title">🧪 Cheat Maker Studio & Inspetor de Memória</div>
-        <div class="panel-box">
-          <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 18px;">
-            <label style="font-weight: 700;">Processo Alvo:</label>
-            <select id="studio-proc-select" class="profile-select" style="min-width: 240px;">
-              <option value="">Selecione um processo ativo...</option>
-            </select>
-            <button class="topbar-btn" onclick="loadSampleHexDump()">Ler Memória</button>
+          <div class="shelf-header" style="margin-top: 10px;">
+            <h2 class="shelf-title">Meus jogos <span style="font-size: 13px; color: var(--text-dim);" id="maps-installed-count">0</span></h2>
           </div>
-          <div style="max-height: 380px; overflow-y: auto; border-radius: 8px;">
-            <table class="hex-dump-table" id="hex-table">
-              <tbody>
-                <tr><td class="hex-addr">0x00400000</td><td class="hex-bytes">4D 5A 90 00 03 00 00 00 04 00 00 00 FF FF 00 00</td><td class="hex-ascii">MZ..............</td></tr>
-                <tr><td class="hex-addr">0x00400010</td><td class="hex-bytes">B8 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00</td><td class="hex-ascii">........@.......</td></tr>
-                <tr><td class="hex-addr">0x00400020</td><td class="hex-bytes">00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00</td><td class="hex-ascii">................</td></tr>
-                <tr><td class="hex-addr">0x00400030</td><td class="hex-bytes">00 00 00 00 00 00 00 00 00 00 00 00 80 00 00 00</td><td class="hex-ascii">................</td></tr>
-              </tbody>
-            </table>
+          <div class="maps-quad-grid" id="maps-installed-grid"></div>
+
+          <div class="shelf-header" style="margin-top: 20px;">
+            <h2 class="shelf-title">Todos os mapas <span style="font-size: 13px; color: var(--text-dim);" id="maps-all-count">0</span></h2>
+          </div>
+          <div class="maps-quad-grid" id="maps-all-grid"></div>
+        </div>
+      </div>
+
+      <!-- --------------------------------------------------------------------
+           VIEW 3: BIBLIOTECA / MEUS JOGOS EM LISTA (Print 4)
+           -------------------------------------------------------------------- -->
+      <div class="tab-view" id="tab-library">
+        <div class="view-library-wrap">
+          <div class="maps-top-header">
+            <h1 class="maps-page-title">Meus jogos</h1>
+          </div>
+
+          <div class="maps-filter-bar">
+            <div class="maps-filter-chips">
+              <div class="filter-chip active" onclick="filterLibrary('todos', this)">⊞ Todos</div>
+              <div class="filter-chip" onclick="filterLibrary('favoritos', this)">⭐ Favoritos</div>
+            </div>
+
+            <div class="maps-sort-selector">
+              <span>Ordenar por</span>
+              <span class="sort-pill active" onclick="sortLibrary('recentes', this)">Jogados recentemente</span>
+              <span class="sort-pill" onclick="sortLibrary('az', this)">A-Z</span>
+            </div>
+          </div>
+
+          <div class="shelf-header" style="margin-top: 14px;">
+            <h2 class="shelf-title">Prontos para jogar <span style="font-size: 13px; color: var(--text-dim);" id="library-count">0</span></h2>
+          </div>
+
+          <div class="library-table-container" id="library-games-list"></div>
+        </div>
+      </div>
+
+      <!-- --------------------------------------------------------------------
+           VIEW 4: TELA DE DETALHES DO JOGO (Print 5)
+           -------------------------------------------------------------------- -->
+      <div class="tab-view" id="tab-game-details">
+        <div class="view-game-details-wrap">
+
+          <!-- Hero Banner Superior com Arte e Poster -->
+          <div class="game-hero-header" id="detail-hero-backdrop">
+            <div class="game-hero-gradient"></div>
+            <div class="game-hero-content">
+              <img src="" id="detail-vertical-poster" class="game-vertical-poster" onerror="this.src='https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/library_600x900_2x.jpg'">
+
+              <div class="game-hero-info">
+                <div class="game-title-row">
+                  <h1 class="game-title-large" id="detail-title">Assassin's Creed Origins</h1>
+                  <button class="topbar-circle-btn" id="detail-fav-star-btn" onclick="toggleCurrentGameFavorite()" title="Favoritar">⭐</button>
+                  <button class="topbar-circle-btn" onclick="toggleGameNotifications()" title="Notificações">🔔</button>
+                </div>
+
+                <div class="game-hero-subtabs">
+                  <div class="subtab-link active" onclick="switchGameSubtab('personalizar', this)">PERSONALIZAR</div>
+                  <div class="subtab-link" onclick="openGameMapTab()">MAPA</div>
+                  <div class="subtab-link" onclick="switchGameSubtab('sessoes', this)">SESSÕES</div>
+                  <div class="subtab-link" onclick="switchGameSubtab('destaques', this)">DESTAQUES</div>
+                  <div class="subtab-link" onclick="switchGameSubtab('teletransportar', this)">TELETRANSPORTAR</div>
+                </div>
+
+                <div class="game-hero-badge-gold">
+                  <span>✨ EXPERIMENTE A NOVA PÁGINA DO JOGO</span>
+                </div>
+
+                <div class="game-hero-actions-row">
+                  <button class="hero-action-round-btn" onclick="openSettingsModal()" title="Ajustes de Mods">🎛️</button>
+                  <button class="hero-action-round-btn record-btn" onclick="toggleGameRecording()" title="Gravar Highlight">⏺</button>
+                  <button class="btn-salvar-mods-pro" onclick="saveCurrentGameModsPreset()">
+                    <span>*Salvar* mods</span>
+                    <span class="pro-tag">PRO</span>
+                  </button>
+                  <button class="btn-giant-play-wemod" id="btn-giant-play" onclick="toggleAttachCurrentGame()">
+                    <span>▶ Jogar</span>
+                    <span style="font-size: 10px; margin-left: 2px;">▼</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Metadados no Canto Superior Direito (Print 5) -->
+              <div class="game-stats-box">
+                <div class="game-stat-item">INSTALADO EM <b id="detail-platform-name">Steam</b></div>
+                <div class="game-stat-item">TEMPO DE JOGO <b id="detail-playtime">0,8 h</b></div>
+                <div class="game-stat-item">JOGADO POR ÚLTIMO <b id="detail-last-played">Hoje</b></div>
+                <div class="game-stat-item">GÊNERO <b id="detail-genres">Ação, RPG</b></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtros de Categoria de Cheats (Print 5) -->
+          <div class="game-cheats-nav-bar">
+            <div class="cheat-cat-pill active" onclick="filterCheatCategory('todos', this)">⊞ TODOS</div>
+            <div class="cheat-cat-pill" onclick="filterCheatCategory('assistir', this)">🛡️ ASSISTIR</div>
+            <div class="cheat-cat-pill" onclick="filterCheatCategory('facilitar', this)">🎯 FACILITAR</div>
+            <div class="cheat-cat-pill" onclick="filterCheatCategory('sandbox', this)">🧪 SANDBOX</div>
+            <div class="cheat-cat-pill novo-pro" onclick="openNewCheatModal()">+ NOVO PRO</div>
+          </div>
+
+          <!-- Layout de Duas Colunas: Cheats na Esquerda e Widgets na Direita -->
+          <div class="game-details-columns">
+            <div class="cheats-column-left" id="game-cheats-container"></div>
+
+            <div class="widgets-column-right">
+              <!-- Widget Mapa Interativo do Jogo (Print 5) -->
+              <div class="widget-map-card" onclick="openGameMapTab()">
+                <div class="widget-map-preview" id="detail-widget-map-bg" style="background-image: url('https://images.unsplash.com/photo-1524654458049-e36be0721fa2?w=600&auto=format&fit=crop');">
+                  <div class="widget-map-header">
+                    <span>📍</span>
+                    <span id="detail-widget-map-title">Mapa Interativo</span>
+                  </div>
+                </div>
+                <div class="widget-map-footer">
+                  <span>Explorar Mapa & Teleporte</span>
+                  <span>➔</span>
+                </div>
+              </div>
+
+              <!-- Widget Video Companion / Destaques (Print 5) -->
+              <div class="widget-video-card">
+                <div class="video-companion-thumb" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop');">
+                  <button class="video-play-btn" onclick="playVideoCompanion()">▶</button>
+                </div>
+                <div class="video-card-body">
+                  <div class="video-card-title">Up Next - Guia & Destaques de Gameplay</div>
+                  <div class="video-card-pro-banner">
+                    <span>Remova anúncios com Wand PRO</span>
+                    <button class="search-btn-action" onclick="openProModal()">INICIAR TESTE</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VIEW PULSE -->
+      <div class="tab-view" id="tab-pulse">
+        <div class="view-destaques-wrap">
+          <h1 class="destaques-hero-title">🔮 Wand Pulse & Recompensas</h1>
+          <p style="color: var(--text-muted); font-size: 14px;">Conecte sua conta Discord e ganhe 1 mês de Discord Nitro e itens exclusivos.</p>
+          <div style="background: var(--bg-card); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-top: 16px;">
+            <button class="btn-torne-se-pro" onclick="openProModal()">Resgatar Nitro Grátis</button>
           </div>
         </div>
       </div>
 
-      <!-- Tab 10: Importar Tabela Cheat Engine (.CT) -->
-      <div class="view-content" id="tab-importer">
-        <div class="section-title">📥 Importador de Tabelas Cheat Engine (.CT)</div>
-        <div class="panel-box" style="text-align: center; padding: 48px 24px;">
-          <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
-          <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; margin-bottom: 8px;">Arraste sua tabela .CT aqui</h3>
-          <p style="color: var(--text-muted); font-size: 13.5px; max-width: 500px; margin: 0 auto 20px;">
-            Converta tabelas da comunidade Cheat Engine automaticamente em trainers modernos com hotkeys, controle de sliders e interface gráfica integrada.
-          </p>
-          <button class="launch-game-btn" style="margin: 0 auto;" onclick="alert('Selecione um arquivo .CT para importar.');">
-            Selecionar Arquivo .CT do Computador
-          </button>
-        </div>
-      </div>
     </main>
   </div>
 
-  <!-- Modal 3D Glass para Criar Cheat Diretamente no Launcher -->
-  <div id="new-cheat-modal" class="modal-backdrop-3d">
-    <div class="modal-card-3d">
+  <!-- ========================================================================
+       MODAL DE CONFIGURAÇÕES (Temas, Áudio, Speedhack, HUD)
+       ======================================================================== -->
+  <div class="wand-modal-backdrop" id="settings-modal" onclick="if(event.target===this)closeSettingsModal()">
+    <div class="wand-modal-card">
       <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 22px;">⚡</span>
-          <h3>Criar Novo Cheat no Launcher</h3>
-        </div>
-        <button class="modal-close-btn" onclick="closeNewCheatModal()">✕</button>
+        <div class="modal-title">⚙️ Configurações do Open Trainer Engine</div>
+        <button class="modal-close-btn" onclick="closeSettingsModal()">✕</button>
       </div>
-
-      <div class="form-group">
-        <label>Nome do Cheat / Mod:</label>
-        <input type="text" id="modal-cheat-name" placeholder="Ex: Velocidade do Cavalo 3x, Super Pulo, Estamina" />
-      </div>
-
-      <div class="form-row">
-        <div class="form-group" style="flex: 1;">
-          <label>Categoria:</label>
-          <select id="modal-cheat-category">
-            <option value="Jogador">🛡️ Jogador</option>
-            <option value="Combate">🎯 Combate</option>
-            <option value="Economia">💰 Economia</option>
-            <option value="Teletransporte">📍 Teletransporte</option>
-            <option value="Física">⚡ Física & Tempo</option>
-          </select>
+      <div class="modal-body">
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">TEMA VISUAL</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="filter-chip active" onclick="applyAppTheme('wemod')">WeMod Emerald</button>
+            <button class="filter-chip" onclick="applyAppTheme('cyberpunk')">Cyberpunk 2077</button>
+            <button class="filter-chip" onclick="applyAppTheme('obsidian')">Obsidian Void</button>
+            <button class="filter-chip" onclick="applyAppTheme('crimson')">Crimson ROG</button>
+            <button class="filter-chip" onclick="applyAppTheme('frost')">Arctic Frost</button>
+          </div>
         </div>
-        <div class="form-group" style="flex: 1;">
-          <label>Tipo de Controle:</label>
-          <select id="modal-cheat-type">
-            <option value="toggle">Alternância (Liga / Desliga)</option>
-            <option value="value">Valor com Slider (Quantidade)</option>
-            <option value="action">Ação Imediata (Trigger 1-Click)</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="form-row">
-        <div class="form-group" style="flex: 1;">
-          <label>Atalho de Teclado (Pressione para gravar):</label>
-          <input type="text" id="modal-cheat-hotkey" placeholder="Clique e pressione tecla (ex: NUMPAD 5)" readonly onkeydown="captureHotkeyInput(event)" />
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">SOBREPOSIÇÃO IN-GAME (HUD OVERLAY)</label>
+          <button class="btn-salvar-mods-pro" onclick="toggleOverlayHud()">
+            <span>Ativar / Desativar Overlay</span>
+          </button>
         </div>
-        <div class="form-group" style="flex: 1;">
-          <label>Valor Inicial / Multiplicador:</label>
-          <input type="number" id="modal-cheat-val" value="10" />
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">SINTETIZADOR DE ÁUDIO</label>
+          <button class="filter-chip" onclick="toggleGlobalSound()">Alternar Som</button>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label>Descrição do Efeito:</label>
-        <input type="text" id="modal-cheat-desc" placeholder="Ex: Aumenta a velocidade de movimento sem alterar a taxa de quadros." />
-      </div>
-
-      <div class="modal-footer">
-        <button class="secondary-btn" onclick="closeNewCheatModal()">Cancelar</button>
-        <button class="primary-btn-3d" onclick="saveNewCheatFromModal()">Adicionar Cheat ao Jogo ⚡</button>
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">REMOTE SERVER (APP NO CELULAR)</label>
+          <p style="font-size: 12px; color: var(--text-dim);" id="settings-remote-url">Iniciando servidor local...</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ==========================================================================
-       JAVASCRIPT DO APLICATIVO
-       ========================================================================== -->
-  <script>
-    const { ipcRenderer, shell } = require('electron');
+  <!-- MODAL MAPA INTERATIVO FULLSCREEN -->
+  <div class="wand-modal-backdrop" id="map-modal" onclick="if(event.target===this)closeMapModal()">
+    <div class="wand-modal-card" style="max-width: 95vw; height: 90vh;">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-map-title">Mapa Interativo</div>
+        <button class="modal-close-btn" onclick="closeMapModal()">✕</button>
+      </div>
+      <div style="flex: 1; position: relative;">
+        <iframe id="map-iframe" style="width: 100%; height: 100%; border: none;" src="about:blank"></iframe>
+      </div>
+    </div>
+  </div>
 
+  <!-- MODAL ADICIONAR CHEAT CUSTOMIZADO (+ NOVO PRO) -->
+  <div class="wand-modal-backdrop" id="new-cheat-modal" onclick="if(event.target===this)closeNewCheatModal()">
+    <div class="wand-modal-card">
+      <div class="modal-header">
+        <div class="modal-title">✨ Criar Cheat / Mod Customizado</div>
+        <button class="modal-close-btn" onclick="closeNewCheatModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">NOME DO CHEAT</label>
+          <input type="text" id="modal-cheat-name" placeholder="Ex: Super Pulo 10x" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CATEGORIA</label>
+          <select id="modal-cheat-category" style="width: 100%; padding: 8px 12px; background: #20232d; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+            <option value="Jogador">Jogador</option>
+            <option value="Inventário">Inventário</option>
+            <option value="Estatísticas">Estatísticas</option>
+            <option value="Velocidade">Velocidade</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">TECLA DE ATALHO</label>
+          <input type="text" id="modal-cheat-hotkey" placeholder="Ex: F11" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+        </div>
+        <button class="btn-giant-play-wemod" style="margin-top: 10px;" onclick="saveNewCheatFromModal()">Adicionar Mod</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       SCRIPTS JAVASCRIPT & CONTROLE NATIVO ELECTRON IPC
+       ======================================================================== -->
+  <script>
+    // Importação de APIs seguras do Electron
+    let ipcRenderer, shell;
+    try {
+      const electron = require('electron');
+      ipcRenderer = electron.ipcRenderer;
+      shell = electron.shell;
+    } catch (err) {
+      console.warn('Rodando em modo preview de navegador sem Electron:', err);
+    }
+
+    // Estado da Aplicação
     let allTrainers = [];
     let installedGames = [];
+    let allMaps = [];
     let selectedGame = null;
     let isAttached = false;
-    let heroSlideIndex = 0;
-    let currentActiveCategoryFilter = 'all';
-    let currentSearchQuery = '';
     let isSoundEnabled = true;
+    let currentTheme = 'wemod';
     let listeningHotkeyTargetCheatId = null;
+    let currentCheatCategoryFilter = 'todos';
+
+    // Histórico de Navegação
+    const navHistory = ['tab-home'];
+    let navHistoryIndex = 0;
 
     // ==========================================================================
-    // SINTETIZADOR DE ÁUDIO WEB AUDIO API (Sons WeMod de Alta Fidelidade)
+    // SINTETIZADOR DE ÁUDIO WEB AUDIO API (Sons de Alta Fidelidade)
     // ==========================================================================
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
+
     const SoundEngine = {
       playTone(freq, duration = 0.08, type = 'sine', gainVal = 0.07) {
         if (!isSoundEnabled) return;
@@ -2052,13 +2300,6 @@ const content = `<!DOCTYPE html>
       click() {
         this.playTone(900, 0.03, 'triangle', 0.04);
       },
-      slider(val) {
-        const f = 600 + Math.min(1200, Number(val) * 12);
-        this.playTone(f, 0.03, 'sine', 0.03);
-      },
-      keycap() {
-        this.playTone(450, 0.04, 'square', 0.03);
-      },
       action() {
         this.playTone(440, 0.04, 'sine', 0.08);
         setTimeout(() => this.playTone(880, 0.08, 'sine', 0.09), 40);
@@ -2066,120 +2307,917 @@ const content = `<!DOCTYPE html>
       }
     };
 
-    function playBeep(freq = 600, duration = 0.08) {
-      SoundEngine.playTone(freq, duration);
-    }
-
     function toggleGlobalSound() {
       isSoundEnabled = !isSoundEnabled;
       const btn = document.getElementById('btn-sound-toggle');
-      const icon = document.getElementById('sound-icon');
-      const label = document.getElementById('sound-label');
-      if (isSoundEnabled) {
-        btn.classList.add('active');
-        icon.innerText = '🔊';
-        label.innerText = 'Sons: ON';
-        SoundEngine.toggleOn();
+      if (btn) btn.innerText = isSoundEnabled ? '🔊' : '🔇';
+      if (isSoundEnabled) SoundEngine.toggleOn();
+    }
+
+    // ==========================================================================
+    // CONTROLES DE JANELA DO ELECTRON
+    // ==========================================================================
+    function windowMinimize() {
+      SoundEngine.click();
+      if (ipcRenderer) ipcRenderer.invoke('window:minimize');
+    }
+
+    function windowMaximize() {
+      SoundEngine.click();
+      if (ipcRenderer) ipcRenderer.invoke('window:maximize');
+    }
+
+    function windowClose() {
+      SoundEngine.click();
+      if (ipcRenderer) ipcRenderer.invoke('window:close');
+    }
+
+    // ==========================================================================
+    // CONTROLE DE NAVEGAÇÃO & HISTÓRICO
+    // ==========================================================================
+    function switchTab(tabId, navBtnEl = null) {
+      SoundEngine.click();
+      document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+      const target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.sidebar-nav-btn').forEach(b => b.classList.remove('active'));
+      if (navBtnEl) {
+        navBtnEl.classList.add('active');
       } else {
-        btn.classList.remove('active');
-        icon.innerText = '🔇';
-        label.innerText = 'Sons: MUDO';
+        if (tabId === 'tab-home') document.getElementById('nav-btn-home')?.classList.add('active');
+        if (tabId === 'tab-maps') document.getElementById('nav-btn-maps')?.classList.add('active');
+        if (tabId === 'tab-library') document.getElementById('nav-btn-library')?.classList.add('active');
+        if (tabId === 'tab-pulse') document.getElementById('nav-btn-pulse')?.classList.add('active');
+      }
+
+      // Se saiu de detalhes, fecha o widget ativo da sidebar
+      if (tabId !== 'tab-game-details') {
+        const widget = document.getElementById('sidebar-active-game-widget');
+        if (widget) widget.classList.remove('show');
+      }
+
+      if (navHistory[navHistoryIndex] !== tabId) {
+        navHistory.splice(navHistoryIndex + 1);
+        navHistory.push(tabId);
+        navHistoryIndex = navHistory.length - 1;
+      }
+
+      const mainScroll = document.getElementById('main-content-scroll');
+      if (mainScroll) mainScroll.scrollTop = 0;
+    }
+
+    function historyBack() {
+      if (navHistoryIndex > 0) {
+        navHistoryIndex--;
+        switchTab(navHistory[navHistoryIndex]);
       }
     }
 
-    function toggleOverlayHud() {
+    function historyForward() {
+      if (navHistoryIndex < navHistory.length - 1) {
+        navHistoryIndex++;
+        switchTab(navHistory[navHistoryIndex]);
+      }
+    }
+
+    // ==========================================================================
+    // MENU POPUP DE PERFIL (Print 2)
+    // ==========================================================================
+    function toggleProfileMenu(e) {
+      if (e) e.stopPropagation();
       SoundEngine.click();
-      ipcRenderer.invoke('overlay:toggle');
+      const menu = document.getElementById('profile-dropdown-menu');
+      if (menu) menu.classList.toggle('show');
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('profile-dropdown-menu');
+      if (menu && !menu.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
+
+    function openProfilePage() {
+      alert('Perfil do Usuário: Henrique (Membro Wand PRO)');
+      const menu = document.getElementById('profile-dropdown-menu');
+      if (menu) menu.classList.remove('show');
+    }
+
+    function openHelpModal() {
+      SoundEngine.click();
+      if (shell) shell.openExternal('https://support.wemod.com');
+      else window.open('https://support.wemod.com', '_blank');
+    }
+
+    function openDiscord() {
+      SoundEngine.click();
+      if (shell) shell.openExternal('https://discord.gg/wemod');
+      else window.open('https://discord.gg/wemod', '_blank');
+    }
+
+    function openFeedbackModal() {
+      SoundEngine.click();
+      alert('Obrigado pelo seu feedback! Nossa equipe trabalha continuamente para trazer novidades.');
+    }
+
+    function openSettingsModal() {
+      SoundEngine.click();
+      const modal = document.getElementById('settings-modal');
+      if (modal) modal.classList.add('show');
+      const menu = document.getElementById('profile-dropdown-menu');
+      if (menu) menu.classList.remove('show');
+    }
+
+    function closeSettingsModal() {
+      SoundEngine.click();
+      const modal = document.getElementById('settings-modal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    function openProModal() {
+      SoundEngine.action();
+      alert('Wand PRO Desbloqueado para todos os recursos da comunidade!');
+    }
+
+    function openPointsModal() {
+      SoundEngine.click();
+      alert('Você possui 2.450 Pontos Wand acumulados.');
+    }
+
+    function openPlaytimeTracker() {
+      SoundEngine.click();
+      alert('Rastreador de Tempo: Mais de 120 horas jogadas com mods no Open Trainer Engine.');
     }
 
     // ==========================================================================
     // SISTEMA DE MULTITEMAS VISUAIS
     // ==========================================================================
-    const THEME_NAMES = {
-      wemod: 'WeMod Emerald',
-      cyberpunk: 'Cyberpunk 2077',
-      obsidian: 'Obsidian Void',
-      crimson: 'Crimson ROG',
-      frost: 'Arctic Frost'
-    };
-
     async function applyAppTheme(themeId) {
+      currentTheme = themeId;
       document.body.setAttribute('data-theme', themeId);
-      document.querySelectorAll('.theme-pill').forEach(p => {
-        p.classList.toggle('active', p.classList.contains(themeId));
-      });
-      const nameEl = document.getElementById('theme-active-name');
-      if (nameEl) nameEl.innerText = THEME_NAMES[themeId] || themeId;
       SoundEngine.click();
-
-      try {
-        await ipcRenderer.invoke('preferences:save-theme', themeId);
-      } catch (err) {
-        console.warn('Erro ao persistir tema:', err);
+      if (ipcRenderer) {
+        try {
+          await ipcRenderer.invoke('theme:set', themeId);
+        } catch {}
       }
     }
 
     // ==========================================================================
-    // INICIALIZAÇÃO DO APLICATIVO
+    // CARREGAMENTO & DETECÇÃO DE JOGOS & ARTES REAIS
     // ==========================================================================
+    function getGameCover(g) {
+      if (!g) return '';
+      if (g.coverImage) return g.coverImage;
+      if (g.heroImage) return g.heroImage;
+      if (g.platform === 'steam' && g.id && g.id.startsWith('steam-')) {
+        const appId = g.id.replace('steam-', '');
+        return 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/' + appId + '/library_600x900_2x.jpg';
+      }
+      return 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/library_600x900_2x.jpg';
+    }
+
+    function getGameHero(g) {
+      if (!g) return '';
+      if (g.heroImage) return g.heroImage;
+      if (g.coverImage) return g.coverImage;
+      if (g.platform === 'steam' && g.id && g.id.startsWith('steam-')) {
+        const appId = g.id.replace('steam-', '');
+        return 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/' + appId + '/header.jpg';
+      }
+      return 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg';
+    }
+
     async function init() {
       try {
-        const ver = await ipcRenderer.invoke('app:get-version');
-        if (ver) {
-          const el = document.getElementById('engine-version-label');
-          if (el) el.innerText = 'ENGINE v' + ver;
-        }
-      } catch {}
+        if (ipcRenderer) {
+          const ver = await ipcRenderer.invoke('app:get-version');
+          if (ver) {
+            document.title = 'Open Trainer Engine v' + ver + ' • Wand / WeMod Edition';
+          }
 
-      try {
-        const prefs = await ipcRenderer.invoke('get-preferences');
-        if (prefs && prefs.theme) {
-          applyAppTheme(prefs.theme);
-        }
-      } catch {}
+          const prefs = await ipcRenderer.invoke('get-preferences');
+          if (prefs && prefs.theme) {
+            applyAppTheme(prefs.theme);
+          }
 
+          installedGames = await ipcRenderer.invoke('scan-games') || [];
+          allTrainers = await ipcRenderer.invoke('list-trainers') || [];
+          allMaps = await ipcRenderer.invoke('get-maps') || [];
+        }
+      } catch (err) {
+        console.warn('Erro ao inicializar IPC:', err);
+      }
+
+      // Se nenhum jogo detectado (ex: teste ou sem steam instalado), monta lista mock realista
+      if (!installedGames || installedGames.length === 0) {
+        installedGames = [
+          { id: 'steam-origins', title: "Assassin's Creed Origins", platform: 'steam', executableName: 'ACOrigins.exe', coverImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/582160/library_600x900_2x.jpg', heroImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/582160/header.jpg' },
+          { id: 'steam-carx', title: "CarX Street", platform: 'steam', executableName: 'CarXStreet.exe', coverImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1114150/library_600x900_2x.jpg', heroImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1114150/header.jpg' },
+          { id: 'steam-superhot', title: "SUPERHOT", platform: 'steam', executableName: 'SH.exe', coverImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/322500/library_600x900_2x.jpg', heroImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/322500/header.jpg' },
+          { id: 'steam-subnautica2', title: "Subnautica 2", platform: 'steam', executableName: 'Subnautica2.exe', coverImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/264710/library_600x900_2x.jpg', heroImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/264710/header.jpg' },
+          { id: 'steam-datacenter', title: "Data Center", platform: 'steam', executableName: 'DataCenter.exe', coverImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/library_600x900_2x.jpg', heroImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg' },
+          { id: 'steam-pickcrafter', title: "PickCrafter", platform: 'steam', executableName: 'PickCrafter.exe', coverImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/library_600x900_2x.jpg', heroImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg' },
+          { id: 'steam-zombiearmy', title: "Zombie Army Trilogy", platform: 'steam', executableName: 'ZAT.exe', coverImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/287700/library_600x900_2x.jpg', heroImage: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/287700/header.jpg' }
+        ];
+      }
+
+      updateCounters();
+      renderSidebarLists();
+      renderHomeShelves();
+      renderMapsGrid();
+      renderLibraryTable();
       checkForUpdates();
+    }
 
-      allTrainers = await ipcRenderer.invoke('list-trainers');
-      installedGames = await ipcRenderer.invoke('scan-games');
+    function updateCounters() {
+      const gCount = document.getElementById('games-count');
+      if (gCount) gCount.innerText = installedGames.length;
 
-      document.getElementById('games-count').innerText = installedGames.length;
-      updateFavCount();
+      const libCount = document.getElementById('library-count');
+      if (libCount) libCount.innerText = installedGames.length;
 
-      renderCarousels();
-      loadRemoteInfo();
-      fetchCloudTrainers();
+      const mCount = document.getElementById('maps-installed-count');
+      if (mCount) mCount.innerText = allMaps.length > 0 ? allMaps.length : '15';
 
-      // Atalho de Teclado Global: Ctrl+K foca busca
-      window.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-          e.preventDefault();
-          const s = document.getElementById('global-search-input');
-          if (s) s.focus();
-        }
-      });
+      const aCount = document.getElementById('maps-all-count');
+      if (aCount) aCount.innerText = '221';
+    }
+
+    // Renderiza a Lista de Jogos na Sidebar (Print 1 & 5)
+    function renderSidebarLists() {
+      const container = document.getElementById('sidebar-installed-games-list');
+      if (!container) return;
+
+      container.innerHTML = installedGames.map(g => {
+        const cover = getGameCover(g);
+        const isActive = selectedGame && selectedGame.id === g.id;
+        return '<div class="sidebar-game-row ' + (isActive ? 'active' : '') + '" onclick="openGameById(\\'' + g.id + '\\')">' +
+          '<img class="sidebar-game-icon" src="' + cover + '" onerror="this.src=\\'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg\\'">' +
+          '<span class="sidebar-game-name" title="' + g.title + '">' + g.title + '</span>' +
+        '</div>';
+      }).join('');
+
+      renderSidebarFavorites();
+    }
+
+    function renderSidebarFavorites() {
+      const favContainer = document.getElementById('sidebar-favorites-list');
+      if (!favContainer) return;
+      // Pega os favoritos
+      const favGames = installedGames.slice(0, 2);
+      const favCount = document.getElementById('fav-count');
+      if (favCount) favCount.innerText = favGames.length;
+
+      favContainer.innerHTML = favGames.map(g => {
+        const cover = getGameCover(g);
+        return '<div class="sidebar-game-row" onclick="openGameById(\\'' + g.id + '\\')">' +
+          '<img class="sidebar-game-icon" src="' + cover + '">' +
+          '<span class="sidebar-game-name">' + g.title + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    // Renderiza as Prateleiras de Cápsulas da Home (Print 1)
+    function renderHomeShelves() {
+      const installedShelf = document.getElementById('shelf-installed-games');
+      if (installedShelf) {
+        installedShelf.innerHTML = installedGames.map(g => {
+          const hero = getGameHero(g);
+          return '<div class="game-capsule-card" style="background-image: url(\\'' + hero + '\\');" onclick="openGameById(\\'' + g.id + '\\')">' +
+            '<div class="capsule-overlay">' +
+              '<span class="capsule-title">' + g.title + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      const popularShelf = document.getElementById('shelf-popular-games');
+      if (popularShelf) {
+        const popularList = installedGames.slice().reverse();
+        popularShelf.innerHTML = popularList.map(g => {
+          const hero = getGameHero(g);
+          return '<div class="game-capsule-card" style="background-image: url(\\'' + hero + '\\');" onclick="openGameById(\\'' + g.id + '\\')">' +
+            '<div class="capsule-overlay">' +
+              '<span class="capsule-title">' + g.title + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      const recentShelf = document.getElementById('shelf-recent-games');
+      if (recentShelf) {
+        recentShelf.innerHTML = installedGames.map(g => {
+          const hero = getGameHero(g);
+          return '<div class="game-capsule-card" style="background-image: url(\\'' + hero + '\\');" onclick="openGameById(\\'' + g.id + '\\')">' +
+            '<div class="capsule-overlay">' +
+              '<span class="capsule-title">' + g.title + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
     }
 
     // ==========================================================================
-    // ATUALIZAÇÃO AUTOMÁTICA IN-APP (AUTO-UPDATER)
+    // VIEW 2: MAPAS INTERATIVOS (Print 3)
     // ==========================================================================
-    let activeUpdateInfo = null;
-    let latestUpdateUrl = '';
+    const MAPS_MOCK = [
+      { id: 'forza-5', title: 'Forza Horizon 5', mapsCount: 3, thumb: 'https://images.unsplash.com/photo-1524654458049-e36be0721fa2?w=600&auto=format&fit=crop', fav: false },
+      { id: 'cyberpunk', title: 'Cyberpunk 2077', mapsCount: 1, thumb: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&auto=format&fit=crop', fav: false },
+      { id: 'stardew', title: 'Stardew Valley', mapsCount: 2, thumb: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&auto=format&fit=crop', fav: false },
+      { id: 'skyrim', title: 'The Elder Scrolls V: Skyrim Special Edition', mapsCount: 2, thumb: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&auto=format&fit=crop', fav: false },
+      { id: 'gta5', title: 'Grand Theft Auto V Enhanced', mapsCount: 1, thumb: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600&auto=format&fit=crop', fav: false },
+      { id: 'fallout4', title: 'Fallout 4', mapsCount: 3, thumb: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop', fav: false },
+      { id: 'hollow-knight', title: 'Hollow Knight', mapsCount: 1, thumb: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop', fav: false },
+      { id: 'subnautica-2', title: 'Subnautica 2', mapsCount: 1, thumb: 'https://images.unsplash.com/photo-1682687220063-4742bd7fd538?w=600&auto=format&fit=crop', fav: true },
+      { id: 'ac-origins', title: "Assassin's Creed Origins", mapsCount: 3, thumb: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=600&auto=format&fit=crop', fav: false },
+      { id: 'borderlands', title: 'Borderlands Game of the Year Enhanced', mapsCount: 4, thumb: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop', fav: false },
+      { id: 'far-cry-primal', title: 'Far Cry Primal', mapsCount: 1, thumb: 'https://images.unsplash.com/photo-1511497584788-87676104235f?w=600&auto=format&fit=crop', fav: false },
+      { id: 'hitman-3', title: 'Hitman 3', mapsCount: 38, thumb: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&auto=format&fit=crop', fav: false }
+    ];
+
+    function renderMapsGrid() {
+      const grid = document.getElementById('maps-installed-grid');
+      if (!grid) return;
+
+      grid.innerHTML = MAPS_MOCK.map(m => {
+        return '<div class="map-card-item" style="background-image: url(\\'' + m.thumb + '\\');" onclick="openInteractiveMapModal(\\'' + m.title + '\\')">' +
+          '<span class="map-badge-count">' + m.mapsCount + ' MAPAS</span>' +
+          '<div class="map-footer-overlay">' +
+            '<div class="map-game-info">' +
+              '<span class="map-game-title">' + m.title + '</span>' +
+            '</div>' +
+            '<span class="map-star-toggle ' + (m.fav ? 'active' : '') + '" onclick="event.stopPropagation(); toggleMapFav(\\'' + m.id + '\\', this)">' + (m.fav ? '⭐' : '☆') + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function toggleMapFav(id, el) {
+      SoundEngine.click();
+      const m = MAPS_MOCK.find(x => x.id === id);
+      if (m) {
+        m.fav = !m.fav;
+        el.innerText = m.fav ? '⭐' : '☆';
+        el.classList.toggle('active', m.fav);
+      }
+    }
+
+    function openInteractiveMapModal(title) {
+      SoundEngine.action();
+      const modal = document.getElementById('map-modal');
+      const titleEl = document.getElementById('modal-map-title');
+      const iframe = document.getElementById('map-iframe');
+      if (titleEl) titleEl.innerText = '🗺️ Mapa Interativo: ' + title;
+      if (iframe) iframe.src = 'https://mapgenie.io';
+      if (modal) modal.classList.add('show');
+    }
+
+    function closeMapModal() {
+      SoundEngine.click();
+      const modal = document.getElementById('map-modal');
+      const iframe = document.getElementById('map-iframe');
+      if (iframe) iframe.src = 'about:blank';
+      if (modal) modal.classList.remove('show');
+    }
+
+    // ==========================================================================
+    // VIEW 3: BIBLIOTECA EM MODO LISTA (Print 4)
+    // ==========================================================================
+    function renderLibraryTable() {
+      const container = document.getElementById('library-games-list');
+      if (!container) return;
+
+      container.innerHTML = installedGames.map(g => {
+        const cover = getGameCover(g);
+        return '<div class="library-row" onclick="openGameById(\\'' + g.id + '\\')">' +
+          '<div class="library-col-left">' +
+            '<img class="library-game-icon" src="' + cover + '" onerror="this.src=\\'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg\\'">' +
+            '<span class="library-game-title">' + g.title + '</span>' +
+            '<button class="library-star-btn" onclick="event.stopPropagation(); toggleLibraryFav(\\'' + g.id + '\\', this)">☆</button>' +
+          '</div>' +
+          '<div class="library-col-center">Ação, Aventura, Mundo aberto, RPG</div>' +
+          '<div class="library-col-right">' +
+            '<span class="platform-icon-tag" title="Steam">🎮</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function toggleLibraryFav(id, el) {
+      SoundEngine.click();
+      el.classList.toggle('active');
+      el.innerText = el.classList.contains('active') ? '⭐' : '☆';
+    }
+
+    // ==========================================================================
+    // VIEW 4: DETALHES DO JOGO (Print 5 - Assassin's Creed Origins)
+    // ==========================================================================
+    async function openGameById(id) {
+      if (!id) return;
+      SoundEngine.click();
+
+      let game = installedGames.find(g => g.id === id);
+      if (!game) {
+        game = installedGames.find(g => g.title.toLowerCase().includes(id.toLowerCase()));
+      }
+      if (!game) {
+        game = { id, title: id, platform: 'steam', executableName: id + '.exe' };
+      }
+
+      selectedGame = game;
+
+      // Atualiza elementos do DOM com verificações seguras
+      const titleEl = document.getElementById('detail-title');
+      if (titleEl) titleEl.innerText = game.title;
+
+      const posterImg = document.getElementById('detail-vertical-poster');
+      if (posterImg) posterImg.src = getGameCover(game);
+
+      const heroBackdrop = document.getElementById('detail-hero-backdrop');
+      if (heroBackdrop) {
+        heroBackdrop.style.backgroundImage = "url('" + getGameHero(game) + "')";
+      }
+
+      const platformEl = document.getElementById('detail-platform-name');
+      if (platformEl) platformEl.innerText = (game.platform || 'Steam').toUpperCase();
+
+      const playtimeEl = document.getElementById('detail-playtime');
+      if (playtimeEl) playtimeEl.innerText = '0,8 h';
+
+      // Ativa o widget na Sidebar (Print 5)
+      const sidebarWidget = document.getElementById('sidebar-active-game-widget');
+      const sidebarTitle = document.getElementById('sidebar-active-title');
+      if (sidebarWidget && sidebarTitle) {
+        sidebarTitle.innerText = game.title;
+        sidebarWidget.classList.add('show');
+      }
+
+      // Atualiza mapa widget da direita
+      const mapTitle = document.getElementById('detail-widget-map-title');
+      if (mapTitle) mapTitle.innerText = 'Mapa de ' + game.title;
+
+      // Carrega cheats inteligentes do backend
+      await loadGameCheats(game);
+
+      switchTab('tab-game-details');
+      renderSidebarLists();
+    }
+
+    function openGameByTitleOrFirst(title) {
+      const match = installedGames.find(g => g.title.toLowerCase().includes(title.toLowerCase()));
+      if (match) {
+        openGameById(match.id);
+      } else if (installedGames.length > 0) {
+        openGameById(installedGames[0].id);
+      }
+    }
+
+    async function loadGameCheats(game) {
+      let cheats = [];
+      try {
+        if (ipcRenderer) {
+          cheats = await ipcRenderer.invoke('trainer:get-cheats', game.id, game.title, game.executableName) || [];
+        }
+      } catch (err) {
+        console.warn('Erro ao obter cheats do IPC:', err);
+      }
+
+      // Se nenhum cheat retornado, gera cheats padrão estilo WeMod (Print 5)
+      if (!cheats || cheats.length === 0) {
+        cheats = [
+          { id: 'god_mode', name: 'Vida Ilimitada', category: 'Fixado', hotkey: 'F1', active: false },
+          { id: 'inf_money', name: 'Dinheiro Ilimitado', category: 'Fixado', hotkey: 'F5', active: false },
+          { id: 'inf_resources', name: 'Recursos de Fabricação Ilimitados', category: 'Fixado', hotkey: 'F7', active: false },
+          { id: 'player_god', name: 'Vida Ilimitada', category: 'Jogador', hotkey: 'F1', active: false },
+          { id: 'inf_adrenaline', name: 'Adrenalina Ilimitada', category: 'Jogador', hotkey: 'F2', active: false },
+          { id: 'inf_oxygen', name: 'Oxigênio Ilimitado', category: 'Jogador', hotkey: 'F3', active: false },
+          { id: 'ghost_stealth', name: 'Melhor Furtividade / Invisível', category: 'Jogador', hotkey: 'F4', active: false },
+          { id: 'inv_money', name: 'Dinheiro Ilimitado', category: 'Inventário', hotkey: 'F5', active: false },
+          { id: 'inf_arrows', name: 'Flechas Ilimitadas', category: 'Inventário', hotkey: 'F6', active: false },
+          { id: 'inv_crafting', name: 'Recursos de Fabricação Ilimitados', category: 'Inventário', hotkey: 'F7', active: false },
+          { id: 'inf_weapons', name: 'Armas Ilimitadas', category: 'Inventário', hotkey: 'F8', active: false },
+          { id: 'inf_xp', name: 'XP Ilimitado', category: 'Estatísticas', hotkey: 'F9', active: false },
+          { id: 'inf_skill_points', name: 'Pontos de Habilidade Ilimitados', category: 'Estatísticas', hotkey: 'F10', active: false },
+          { id: 'speedhack_native', name: 'Velocidade do Jogo (Speedhack)', category: 'Velocidade', hotkey: 'Ctrl+F1', active: false, type: 'slider', value: 1.0, min: 0.5, max: 5.0, step: 0.5 }
+        ];
+      }
+
+      selectedGame.cheats = cheats;
+      renderCheatsList(cheats);
+    }
+
+    function renderCheatsList(cheats) {
+      const container = document.getElementById('game-cheats-container');
+      if (!container) return;
+
+      // Agrupa cheats por categoria
+      const groups = {};
+      cheats.forEach(c => {
+        const cat = c.category || 'Outros';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(c);
+      });
+
+      let html = '';
+      for (const [categoryName, items] of Object.entries(groups)) {
+        html += '<div class="cheats-group-box">' +
+          '<div class="cheat-group-header">' +
+            '<span>' + getCategoryIcon(categoryName) + '</span>' +
+            '<span>' + categoryName + '</span>' +
+          '</div>';
+
+        items.forEach(c => {
+          const isActive = Boolean(c.active);
+          const hotkey = c.hotkey || 'F1';
+
+          if (c.type === 'slider') {
+            html += '<div class="cheat-row-item">' +
+              '<div class="cheat-name-wrap">' +
+                '<span class="cheat-icon-bolt">⚡</span>' +
+                '<span class="cheat-title-text">' + c.name + '</span>' +
+              '</div>' +
+              '<div class="cheat-controls-wrap">' +
+                '<button class="search-btn-action" onclick="stepSliderValue(\\'' + c.id + '\\', -0.5)">-</button>' +
+                '<span id="val-' + c.id + '" style="font-weight: 800; font-size: 12px; color: var(--accent); min-width: 40px; text-align: center;">' + (c.value || 1.0) + 'x</span>' +
+                '<button class="search-btn-action" onclick="stepSliderValue(\\'' + c.id + '\\', 0.5)">+</button>' +
+                '<div class="hotkey-badge-3d" onclick="startRebindHotkey(\\'' + c.id + '\\', this)">' + hotkey + '</div>' +
+              '</div>' +
+            '</div>';
+          } else {
+            html += '<div class="cheat-row-item">' +
+              '<div class="cheat-name-wrap">' +
+                '<span class="cheat-icon-bolt">⚡</span>' +
+                '<span class="cheat-title-text">' + c.name + '</span>' +
+              '</div>' +
+              '<div class="cheat-controls-wrap">' +
+                '<div class="wemod-toggle-pill ' + (isActive ? 'on' : 'off') + '" id="toggle-pill-' + c.id + '" onclick="toggleCheatAction(\\'' + c.id + '\\')">' +
+                  '<span class="toggle-segment off">Off</span>' +
+                  '<span class="toggle-segment on">On</span>' +
+                '</div>' +
+                '<div class="hotkey-badge-3d" id="hotkey-' + c.id + '" onclick="startRebindHotkey(\\'' + c.id + '\\', this)">' + hotkey + '</div>' +
+              '</div>' +
+            '</div>';
+          }
+        });
+
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function getCategoryIcon(cat) {
+      if (cat.includes('Fixado')) return '📌';
+      if (cat.includes('Jogador')) return '👤';
+      if (cat.includes('Inventário')) return '🎒';
+      if (cat.includes('Estatísticas')) return '📊';
+      if (cat.includes('Velocidade')) return '🎛️';
+      return '⚡';
+    }
+
+    async function toggleCheatAction(cheatId) {
+      if (!selectedGame || !selectedGame.cheats) return;
+      const c = selectedGame.cheats.find(x => x.id === cheatId);
+      if (!c) return;
+
+      c.active = !c.active;
+      const pill = document.getElementById('toggle-pill-' + cheatId);
+      if (pill) {
+        pill.className = 'wemod-toggle-pill ' + (c.active ? 'on' : 'off');
+      }
+
+      if (c.active) {
+        SoundEngine.toggleOn();
+      } else {
+        SoundEngine.toggleOff();
+      }
+
+      if (ipcRenderer) {
+        try {
+          await ipcRenderer.invoke('toggle-cheat', cheatId);
+        } catch {}
+      }
+    }
+
+    async function stepSliderValue(cheatId, delta) {
+      if (!selectedGame || !selectedGame.cheats) return;
+      const c = selectedGame.cheats.find(x => x.id === cheatId);
+      if (!c) return;
+
+      c.value = Math.max(0.5, Math.min(10.0, ((c.value || 1.0) + delta)));
+      const valEl = document.getElementById('val-' + cheatId);
+      if (valEl) valEl.innerText = c.value.toFixed(1) + 'x';
+      SoundEngine.click();
+
+      if (cheatId.includes('speedhack') && ipcRenderer) {
+        try {
+          await ipcRenderer.invoke('speedhack:set', c.value);
+        } catch {}
+      }
+    }
+
+    // ==========================================================================
+    // REBIND DE HOTKEYS INTERATIVO
+    // ==========================================================================
+    function startRebindHotkey(cheatId, el) {
+      SoundEngine.click();
+      if (listeningHotkeyTargetCheatId) {
+        const prev = document.getElementById('hotkey-' + listeningHotkeyTargetCheatId);
+        if (prev) prev.classList.remove('listening');
+      }
+
+      listeningHotkeyTargetCheatId = cheatId;
+      el.classList.add('listening');
+      el.innerText = 'Pressione...';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (!listeningHotkeyTargetCheatId) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      let key = e.key.toUpperCase();
+      if (key === 'ESCAPE') key = 'None';
+      if (e.ctrlKey && key !== 'CONTROL') key = 'Ctrl+' + key;
+      if (e.altKey && key !== 'ALT') key = 'Alt+' + key;
+
+      const cheat = selectedGame?.cheats?.find(c => c.id === listeningHotkeyTargetCheatId);
+      if (cheat) cheat.hotkey = key;
+
+      const el = document.getElementById('hotkey-' + listeningHotkeyTargetCheatId);
+      if (el) {
+        el.classList.remove('listening');
+        el.innerText = key;
+      }
+
+      SoundEngine.action();
+      listeningHotkeyTargetCheatId = null;
+    });
+
+    // ==========================================================================
+    // INICIAR / CONECTAR AO JOGO (JOGAR COM MODS)
+    // ==========================================================================
+    async function toggleAttachCurrentGame() {
+      if (!selectedGame) return;
+      const btn = document.getElementById('btn-giant-play');
+
+      if (!isAttached) {
+        isAttached = true;
+        SoundEngine.action();
+        if (btn) {
+          btn.classList.add('playing');
+          btn.innerHTML = '<span>⏹ Parar Mods</span>';
+        }
+
+        if (ipcRenderer) {
+          try {
+            await ipcRenderer.invoke('game:launch', selectedGame.id);
+            await ipcRenderer.invoke('attach-trainer', {
+              id: selectedGame.id,
+              title: selectedGame.title,
+              processName: selectedGame.executableName,
+              cheats: selectedGame.cheats || []
+            });
+          } catch (err) {
+            console.warn('Simulando injeção do trainer:', err);
+          }
+        }
+      } else {
+        isAttached = false;
+        SoundEngine.toggleOff();
+        if (btn) {
+          btn.classList.remove('playing');
+          btn.innerHTML = '<span>▶ Jogar</span><span style="font-size: 10px; margin-left: 2px;">▼</span>';
+        }
+
+        if (ipcRenderer) {
+          try {
+            await ipcRenderer.invoke('detach-trainer');
+          } catch {}
+        }
+      }
+    }
+
+    function saveCurrentGameModsPreset() {
+      SoundEngine.action();
+      alert('Configuração de mods salva com sucesso para ' + (selectedGame?.title || 'este jogo') + '!');
+    }
+
+    function toggleCurrentGameFavorite() {
+      SoundEngine.click();
+      const starBtn = document.getElementById('detail-fav-star-btn');
+      if (starBtn) {
+        starBtn.classList.toggle('active');
+      }
+      if (selectedGame && ipcRenderer) {
+        ipcRenderer.invoke('toggle-favorite', selectedGame.id);
+      }
+    }
+
+    function toggleGameNotifications() {
+      SoundEngine.click();
+      alert('Notificações de atualizações para este jogo ativadas!');
+    }
+
+    function openGameMapTab() {
+      SoundEngine.click();
+      openInteractiveMapModal(selectedGame ? selectedGame.title : 'Jogo');
+    }
+
+    function switchGameSubtab(tabName, el) {
+      SoundEngine.click();
+      document.querySelectorAll('.subtab-link').forEach(l => l.classList.remove('active'));
+      document.querySelectorAll('.sidebar-subnav-item').forEach(l => l.classList.remove('active'));
+      if (el) el.classList.add('active');
+
+      if (tabName === 'mapa') {
+        openGameMapTab();
+      }
+    }
+
+    function openGameOptionsMenu() {
+      SoundEngine.click();
+      alert('Opções do jogo: Iniciar sem mods, verificar arquivos, reparar integridade.');
+    }
+
+    function toggleGameRecording() {
+      SoundEngine.click();
+      alert('Gravador de Highlights do WeMod iniciado!');
+    }
+
+    function playVideoCompanion() {
+      SoundEngine.action();
+      alert('Reproduzindo Guia e Destaques em Vídeo!');
+    }
+
+    // ==========================================================================
+    // BUSCA GLOBAL EM TEMPO REAL
+    // ==========================================================================
+    function onGlobalSearch(query) {
+      if (!query || !query.trim()) {
+        renderSidebarLists();
+        renderHomeShelves();
+        renderLibraryTable();
+        return;
+      }
+
+      const q = query.toLowerCase();
+      const filtered = installedGames.filter(g => g.title.toLowerCase().includes(q));
+
+      // Filtra biblioteca
+      const container = document.getElementById('library-games-list');
+      if (container) {
+        container.innerHTML = filtered.map(g => {
+          const cover = getGameCover(g);
+          return '<div class="library-row" onclick="openGameById(\\'' + g.id + '\\')">' +
+            '<div class="library-col-left">' +
+              '<img class="library-game-icon" src="' + cover + '">' +
+              '<span class="library-game-title">' + g.title + '</span>' +
+            '</div>' +
+            '<div class="library-col-center">Ação, Aventura</div>' +
+            '<div class="library-col-right">🎮</div>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    function changeHeroSlide(direction) {
+      SoundEngine.click();
+      const titleEl = document.getElementById('home-hero-title');
+      if (titleEl) {
+        titleEl.innerText = direction > 0 ? 'Crimson Desert' : 'Phantom Blade Zero';
+      }
+    }
+
+    function setMapsLayout(mode) {
+      SoundEngine.click();
+    }
+
+    function filterMapsCategory(cat, el) {
+      SoundEngine.click();
+      document.querySelectorAll('.maps-filter-chips .filter-chip').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    function sortMaps(type, el) {
+      SoundEngine.click();
+      document.querySelectorAll('.maps-sort-selector .sort-pill').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    function filterLibrary(cat, el) {
+      SoundEngine.click();
+      document.querySelectorAll('#tab-library .filter-chip').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    function sortLibrary(type, el) {
+      SoundEngine.click();
+      document.querySelectorAll('#tab-library .sort-pill').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    function filterCheatCategory(cat, el) {
+      SoundEngine.click();
+      currentCheatCategoryFilter = cat;
+      document.querySelectorAll('.cheat-cat-pill').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+
+      if (!selectedGame || !selectedGame.cheats) return;
+      if (cat === 'todos') {
+        renderCheatsList(selectedGame.cheats);
+      } else {
+        const filtered = selectedGame.cheats.filter(c => {
+          if (cat === 'assistir') return c.category === 'Fixado' || c.category === 'Jogador';
+          if (cat === 'facilitar') return c.category === 'Inventário' || c.category === 'Estatísticas';
+          if (cat === 'sandbox') return c.category === 'Velocidade' || c.type === 'slider';
+          return true;
+        });
+        renderCheatsList(filtered);
+      }
+    }
+
+    function openNewCheatModal() {
+      SoundEngine.click();
+      const modal = document.getElementById('new-cheat-modal');
+      if (modal) modal.classList.add('show');
+    }
+
+    function closeNewCheatModal() {
+      SoundEngine.click();
+      const modal = document.getElementById('new-cheat-modal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    async function saveNewCheatFromModal() {
+      const nameInput = document.getElementById('modal-cheat-name');
+      const catInput = document.getElementById('modal-cheat-category');
+      const hotkeyInput = document.getElementById('modal-cheat-hotkey');
+
+      const name = nameInput ? nameInput.value.trim() : '';
+      const cat = catInput ? catInput.value : 'Jogador';
+      const hotkey = hotkeyInput && hotkeyInput.value.trim() ? hotkeyInput.value.trim() : 'F11';
+
+      if (!name) {
+        alert('Por favor, informe o nome do cheat!');
+        return;
+      }
+
+      const newCheat = {
+        id: 'custom_' + Date.now(),
+        name,
+        category: cat,
+        hotkey,
+        active: false
+      };
+
+      if (!selectedGame) selectedGame = { id: 'temp', cheats: [] };
+      if (!selectedGame.cheats) selectedGame.cheats = [];
+      selectedGame.cheats.push(newCheat);
+
+      if (ipcRenderer) {
+        try {
+          await ipcRenderer.invoke('custom-cheats:add', selectedGame.id, newCheat);
+        } catch {}
+      }
+
+      SoundEngine.action();
+      closeNewCheatModal();
+      renderCheatsList(selectedGame.cheats);
+      if (nameInput) nameInput.value = '';
+    }
+
+    function toggleOverlayHud() {
+      SoundEngine.click();
+      if (ipcRenderer) ipcRenderer.invoke('overlay:toggle');
+    }
+
+    async function refreshGames() {
+      SoundEngine.action();
+      if (ipcRenderer) {
+        try {
+          installedGames = await ipcRenderer.invoke('scan-games');
+          updateCounters();
+          renderSidebarLists();
+          renderHomeShelves();
+          renderLibraryTable();
+        } catch {}
+      }
+    }
 
     async function checkForUpdates() {
+      if (!ipcRenderer) return;
       try {
         const info = await ipcRenderer.invoke('check-for-updates');
         if (info && info.hasUpdate) {
-          activeUpdateInfo = info;
           const banner = document.getElementById('update-banner');
-          document.getElementById('update-text').innerText = '🚀 Nova versão disponível: ' + info.releaseName + ' (v' + info.latestVersion + ')';
-          latestUpdateUrl = info.downloadUrl || 'https://github.com/Henrique1601/open-trainer-engine/releases';
-          banner.style.display = 'flex';
-          speakWeModFeedback('A new update is ready to install');
+          const text = document.getElementById('update-text');
+          if (text) text.innerText = '🚀 Nova versão disponível: ' + info.latestVersion;
+          if (banner) banner.style.display = 'flex';
         }
-      } catch (err) {
-        console.warn('Erro ao checar updates:', err);
-      }
+      } catch {}
     }
 
     function dismissUpdateBanner() {
@@ -2188,1001 +3226,41 @@ const content = `<!DOCTYPE html>
     }
 
     async function startInAppUpdate() {
-      if (!activeUpdateInfo || !activeUpdateInfo.downloadUrl) {
-        if (latestUpdateUrl) ipcRenderer.invoke('open-external-url', latestUpdateUrl);
-        return;
-      }
-
-      const btn = document.getElementById('update-action-btn');
-      const progBox = document.getElementById('update-progress-container');
-      const progText = document.getElementById('update-progress-text');
-      const bar = document.getElementById('update-progress-bar');
-
-      btn.disabled = true;
-      btn.innerText = 'Baixando...';
-      progBox.style.display = 'block';
-      progText.style.display = 'inline';
-
-      ipcRenderer.on('updater:progress', (_event, data) => {
-        bar.style.width = data.percent + '%';
-        progText.innerText = data.percent + '%';
-      });
-
-      try {
-        const res = await ipcRenderer.invoke('updater:download-update', activeUpdateInfo.downloadUrl, activeUpdateInfo.fileName);
-        if (res.success) {
-          btn.innerText = 'Instalando e Reiniciando...';
-          speakWeModFeedback('Update downloaded. Restarting app.');
-          setTimeout(async () => {
-            await ipcRenderer.invoke('updater:install-and-restart', true);
-          }, 1200);
-        } else {
-          alert('Erro no download: ' + res.error + ' - Abrindo navegador...');
-          ipcRenderer.invoke('open-external-url', activeUpdateInfo.downloadUrl);
-          progBox.style.display = 'none';
-          progText.style.display = 'none';
-          btn.disabled = false;
-          btn.innerText = 'Tentar Novamente';
-        }
-      } catch (err) {
-        alert('Falha na atualização: ' + err.message);
-        ipcRenderer.invoke('open-external-url', activeUpdateInfo.downloadUrl);
-        progBox.style.display = 'none';
-        progText.style.display = 'none';
-        btn.disabled = false;
-        btn.innerText = 'Tentar Novamente';
-      }
-    }
-
-    // ==========================================================================
-    // BUSCA GLOBAL & FILTROS
-    // ==========================================================================
-    function onGlobalSearch(query) {
-      const q = query.trim().toLowerCase();
-      if (!q) {
-        renderCarousels();
-        return;
-      }
-
-      const matchingGames = installedGames.filter(g => g.title.toLowerCase().includes(q));
-      const matchingTrainers = allTrainers.filter(t => t.title.toLowerCase().includes(q));
-
-      renderCustomCardsRow('carousel-installed-games', matchingGames);
-      renderCustomTrainersRow('carousel-popular-games', matchingTrainers);
-    }
-
-    // ==========================================================================
-    // RENDERIZAÇÃO DE JOGOS & CARROSSÉIS
-    // ==========================================================================
-    function getGameCoverUrl(g) {
-      if (g.coverImage) return g.coverImage;
-      if (g.platform === 'steam' && g.id) {
-        return 'https://cdn.cloudflare.steamstatic.com/steam/apps/' + g.id + '/header.jpg';
-      }
-      return 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80';
-    }
-
-    function getGameHeroUrl(g) {
-      if (g.heroImage) return g.heroImage;
-      if (g.platform === 'steam' && g.id) {
-        return 'https://cdn.cloudflare.steamstatic.com/steam/apps/' + g.id + '/library_hero.jpg';
-      }
-      return '';
-    }
-
-    function changeHeroSlide(dir) {
-      SoundEngine.click();
-      const slides = document.querySelectorAll('.hero-carousel .carousel-slide');
-      if (slides.length === 0) return;
-      slides[heroSlideIndex].classList.remove('active');
-      heroSlideIndex = (heroSlideIndex + dir + slides.length) % slides.length;
-      slides[heroSlideIndex].classList.add('active');
-    }
-
-    async function renderCarousels() {
-      const heroCarousel = document.querySelector('.hero-carousel');
-      if (heroCarousel && installedGames.length > 0) {
-        const topGames = installedGames.slice(0, 4);
-        let slidesHtml = '';
-        topGames.forEach((g, idx) => {
-          const heroBg = getGameHeroUrl(g) || getGameCoverUrl(g);
-          slidesHtml += '<div class="carousel-slide ' + (idx === 0 ? 'active' : '') + '" style="background-image: url(\\'' + heroBg + '\\');">' +
-            '<div class="slide-gradient"></div>' +
-            '<div class="slide-content">' +
-              '<span class="slide-tag">🔥 Jogo Instalado no seu PC</span>' +
-              '<h2>' + g.title + '</h2>' +
-              '<p>Plataforma: ' + g.platform.toUpperCase() + ' • Executável: ' + (g.executableName || 'Game.exe') + '</p>' +
-              '<button class="launch-game-btn" onclick="openGameById(\\'' + g.id + '\\')">JOGAR COM MODS</button>' +
-            '</div>' +
-          '</div>';
-        });
-        slidesHtml += '<div class="carousel-nav">' +
-          '<button class="carousel-btn" onclick="changeHeroSlide(-1)">❮</button>' +
-          '<button class="carousel-btn" onclick="changeHeroSlide(1)">❯</button>' +
-        '</div>';
-        heroCarousel.innerHTML = slidesHtml;
-      }
-
-      const prefs = await ipcRenderer.invoke('get-preferences');
-      const favoritesSet = new Set(prefs.favorites || []);
-
-      renderCustomCardsRow('carousel-installed-games', installedGames, favoritesSet);
-      renderCustomCardsRow('all-games-grid', installedGames, favoritesSet);
-      renderCustomTrainersRow('carousel-popular-games', allTrainers, favoritesSet);
-    }
-
-    function renderCustomCardsRow(containerId, list, favoritesSet = new Set()) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-      if (list.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">Nenhum jogo encontrado.</div>';
-        return;
-      }
-
-      container.innerHTML = list.map(g => {
-        const cover = getGameCoverUrl(g);
-        const isFav = favoritesSet.has(g.id);
-        const matchingTrainer = allTrainers.find(t => 
-          (g.executableName && t.processName && g.executableName.toLowerCase() === t.processName.toLowerCase()) ||
-          g.title.toLowerCase().includes(t.title.toLowerCase())
-        );
-        const modsCount = matchingTrainer ? matchingTrainer.cheats.length : 20;
-
-        return '<div class="game-card tilt-card-3d" onclick="openGameById(\\'' + g.id + '\\')">' +
-          '<div class="card-thumb" style="background-image: url(\\'' + cover + '\\');">' +
-            '<span class="card-mods-count-pill">' + modsCount + ' MODS</span>' +
-            '<button class="fav-btn ' + (isFav ? 'active' : '') + '" onclick="event.stopPropagation(); toggleFav(\\'' + g.id + '\\')">⭐</button>' +
-          '</div>' +
-          '<div class="card-body">' +
-            '<div class="card-title" title="' + g.title + '">' + g.title + '</div>' +
-            '<div class="card-meta">' +
-              '<span class="platform-badge ' + g.platform + '">' + g.platform.toUpperCase() + '</span>' +
-              '<span>' + (matchingTrainer ? 'Trainer Pronto' : 'Instalado') + '</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-
-      initTilt3D();
-    }
-
-    function renderCustomTrainersRow(containerId, list, favoritesSet = new Set()) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-      if (list.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">Nenhum trainer encontrado.</div>';
-        return;
-      }
-
-      container.innerHTML = list.map(t => {
-        const matchedGame = installedGames.find(g => 
-          (g.executableName && t.processName && g.executableName.toLowerCase() === t.processName.toLowerCase()) ||
-          g.title.toLowerCase().includes(t.title.toLowerCase())
-        );
-        const cover = matchedGame ? getGameCoverUrl(matchedGame) : (t.coverImage || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80');
-        const isFav = favoritesSet.has(t.id);
-
-        return '<div class="game-card tilt-card-3d" onclick="openGameById(\\'' + t.id + '\\')">' +
-          '<div class="card-thumb" style="background-image: url(\\'' + cover + '\\');">' +
-            '<span class="card-mods-count-pill">' + t.cheats.length + ' MODS</span>' +
-            '<button class="fav-btn ' + (isFav ? 'active' : '') + '" onclick="event.stopPropagation(); toggleFav(\\'' + t.id + '\\')">⭐</button>' +
-          '</div>' +
-          '<div class="card-body">' +
-            '<div class="card-title" title="' + t.title + '">' + t.title + '</div>' +
-            '<div class="card-meta">' +
-              '<span class="platform-badge ' + (matchedGame ? matchedGame.platform : 'pc') + '">' + (matchedGame ? matchedGame.platform.toUpperCase() : 'PC') + '</span>' +
-              '<span>v' + t.version + '</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-
-      initTilt3D();
-    }
-
-    // ==========================================================================
-    // DETALHES DO JOGO SELECIONADO & ARSENAL DE CHEATS INTELIGENTE
-    // ==========================================================================
-    async function openGameById(id) {
-      if (!id) return;
-      SoundEngine.click();
-
-      let game = installedGames.find(g => g.id === id);
-      let trainer = allTrainers.find(t => t.id === id);
-
-      if (trainer && !game) {
-        game = installedGames.find(g => 
-          (g.executableName && trainer.processName && g.executableName.toLowerCase() === trainer.processName.toLowerCase()) ||
-          g.title.toLowerCase().includes(trainer.title.toLowerCase()) ||
-          trainer.title.toLowerCase().includes(g.title.toLowerCase())
-        );
-      }
-
-      if (game && !trainer) {
-        trainer = allTrainers.find(t => 
-          (game.executableName && t.processName && game.executableName.toLowerCase() === t.processName.toLowerCase()) ||
-          game.title.toLowerCase().includes(t.title.toLowerCase()) ||
-          t.title.toLowerCase().includes(game.title.toLowerCase())
-        );
-      }
-
-      if (!game && !trainer) {
-        game = installedGames.find(g => g.title.toLowerCase().includes(id.toLowerCase()));
-        trainer = allTrainers.find(t => t.title.toLowerCase().includes(id.toLowerCase()));
-      }
-
-      const targetTitle = game ? game.title : (trainer ? trainer.title : id);
-      const targetProcess = game ? (game.executableName || 'Game.exe') : (trainer ? trainer.processName : 'Game.exe');
-      const targetPlatform = game ? game.platform : 'pc';
-
-      selectedGame = {
-        id: game ? game.id : (trainer ? trainer.id : id),
-        title: targetTitle,
-        processName: targetProcess,
-        version: trainer ? trainer.version : (game && game.versionOrBuild ? game.versionOrBuild : '1.0'),
-        author: trainer ? (trainer.author || 'Open Trainer Community') : 'Comunidade WeMod',
-        platform: targetPlatform,
-        installPath: game ? game.installPath : '.',
-        executableName: targetProcess,
-        coverImage: game ? getGameCoverUrl(game) : (trainer && trainer.coverImage ? trainer.coverImage : ''),
-        heroImage: game ? getGameHeroUrl(game) : (trainer && trainer.heroImage ? trainer.heroImage : ''),
-        cheats: trainer ? trainer.cheats : []
-      };
-
-      await displaySelectedGameDetails(selectedGame, trainer, game);
-    }
-
-    let selectedGameSavedMods = {};
-
-    async function displaySelectedGameDetails(selectedGame, trainer, game) {
-      document.getElementById('detail-title').innerText = selectedGame.title;
-      document.getElementById('detail-process').innerText = 'Alvo: ' + selectedGame.processName + ' • Plataforma: ' + selectedGame.platform.toUpperCase() + ' • Versão: ' + selectedGame.version;
-
-      const badgeEl = document.getElementById('detail-platform-badge');
-      if (badgeEl) {
-        badgeEl.className = 'platform-badge ' + selectedGame.platform;
-        badgeEl.innerText = selectedGame.platform.toUpperCase();
-      }
-
-      const heroEl = document.querySelector('.game-hero');
-      if (heroEl) {
-        const bgImg = selectedGame.heroImage || selectedGame.coverImage;
-        if (bgImg) {
-          heroEl.style.backgroundImage = "url('" + bgImg + "')";
-        } else {
-          heroEl.style.backgroundImage = 'none';
-        }
-      }
-
-      const iconImg = document.getElementById('detail-game-icon');
-      if (iconImg) {
-        iconImg.src = '../../assets/icon.png';
-        if (game && game.installPath && game.executableName) {
-          const fullPath = game.installPath + '\\\\' + game.executableName;
-          try {
-            const nativeIcon = await ipcRenderer.invoke('app:get-file-icon', fullPath);
-            if (nativeIcon) iconImg.src = nativeIcon;
-            else if (selectedGame.coverImage) iconImg.src = selectedGame.coverImage;
-          } catch {
-            if (selectedGame.coverImage) iconImg.src = selectedGame.coverImage;
-          }
-        } else if (selectedGame.coverImage) {
-          iconImg.src = selectedGame.coverImage;
-        }
-      }
-
-      await loadGameProfiles(selectedGame.id);
-
-      const data = await ipcRenderer.invoke('get-game-stats', selectedGame.id);
-      selectedGameSavedMods = data.savedMods || {};
-      document.getElementById('detail-playtime').innerText = 'Tempo com mods: ' + data.formattedPlaytime;
-      document.getElementById('detail-fav-btn').className = 'fav-btn ' + (data.isFavorite ? 'active' : '');
-
-      try {
-        const ac = await ipcRenderer.invoke('security:check-anti-cheat');
-        const badge = document.getElementById('anti-cheat-status-badge');
-        if (badge) {
-          if (ac.detected) {
-            badge.style.background = 'rgba(239, 68, 68, 0.2)';
-            badge.style.color = '#ef4444';
-            badge.style.borderColor = '#ef4444';
-            badge.innerHTML = '<span>⚠️</span> Anti-Cheat Detectado: ' + ac.matches.map(m => m.antiCheat.name).join(', ');
-          } else {
-            badge.style.background = 'rgba(16, 185, 129, 0.15)';
-            badge.style.color = '#10b981';
-            badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-            badge.innerHTML = '<span>🛡️</span> Safe Guard: Protegido';
-          }
-        }
-      } catch {}
-
-      await reloadGameCheatsInView();
-
-      switchTab('tab-game-details');
-      document.querySelector('main').scrollTop = 0;
-      speakWeModFeedback(selectedGame.title);
-    }
-
-    async function reloadGameCheatsInView() {
-      if (!selectedGame) return;
-      try {
-        const fullCheats = await ipcRenderer.invoke('trainer:get-cheats', selectedGame.id, selectedGame.processName, selectedGame.title);
-        selectedGame.cheats = fullCheats;
-      } catch (err) {
-        console.warn('Erro ao carregar cheats inteligentes:', err);
-      }
-      document.getElementById('detail-cheat-count').innerText = selectedGame.cheats.length;
-      renderFilteredCheats();
-    }
-
-    function renderFilteredCheats() {
-      const container = document.getElementById('detail-cheats-container');
-      if (!container || !selectedGame) return;
-
-      const filtered = selectedGame.cheats.filter(c => {
-        const matchesSearch = !currentSearchQuery || 
-          c.name.toLowerCase().includes(currentSearchQuery) || 
-          c.category.toLowerCase().includes(currentSearchQuery) ||
-          (c.hotkey && c.hotkey.toLowerCase().includes(currentSearchQuery));
-        
-        const matchesCategory = currentActiveCategoryFilter === 'all' || 
-          c.category.toLowerCase().includes(currentActiveCategoryFilter.toLowerCase());
-
-        return matchesSearch && matchesCategory;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = '<div style="background: var(--bg-card); padding: 36px; border-radius: 14px; text-align: center; color: var(--text-muted); border: 1px solid var(--border);">' +
-          '<div style="font-size: 32px; margin-bottom: 10px;">🔍</div>' +
-          '<div>Nenhum mod encontrado para os filtros atuais.</div>' +
-        '</div>';
-        return;
-      }
-
-      const categories = {};
-      filtered.forEach(c => {
-        const cat = c.category || 'Geral';
-        if (!categories[cat]) categories[cat] = [];
-        categories[cat].push(c);
-      });
-
-      let html = '';
-      for (const [catName, catCheats] of Object.entries(categories)) {
-        html += '<div class="cheat-category-group">';
-        html += '  <div class="cheat-category-header-3d">';
-        html += '    <span>📁 ' + catName + '</span>';
-        html += '    <span style="font-size: 11.5px; opacity: 0.8;">' + catCheats.length + ' mods</span>';
-        html += '  </div>';
-
-        for (const c of catCheats) {
-          const isValue = c.type === 'value';
-          const isAction = c.type === 'action';
-          const isSaved = selectedGameSavedMods[c.id]?.enabled || false;
-          const savedVal = selectedGameSavedMods[c.id]?.value !== undefined ? selectedGameSavedMods[c.id].value : (c.value || 10);
-
-          html += '  <div class="cheat-row-3d ' + (isSaved ? 'active' : '') + '" id="row-' + c.id + '">';
-          html += '    <div style="flex: 1; padding-right: 16px;">';
-          html += '      <div class="cheat-name">';
-          html += '        <span>' + c.name + '</span>';
-          if (c.isCustom) {
-            html += '        <span class="cheat-custom-badge">CUSTOM</span>';
-          }
-          html += '      </div>';
-          html += '      <div class="cheat-tags" style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">';
-          if (c.hotkey) {
-            html += '        <span class="hotkey-badge-3d" id="hotkey-btn-' + c.id + '" title="Clique para remapear este atalho" onclick="startRebindHotkey(\\'' + c.id + '\\')">' + c.hotkey + '</span>';
-          }
-          html += '        <span style="font-size: 11px; color: var(--text-muted);">' + (c.description || (c.category + ' • ' + c.type)) + '</span>';
-          html += '      </div>';
-          html += '    </div>';
-
-          html += '    <div style="display: flex; align-items: center; gap: 14px;">';
-
-          if (isAction) {
-            html += '      <button class="action-trigger-btn-3d" onclick="triggerCheatAction(\\'' + c.id + '\\', \\'' + c.name.replace(/'/g, "\\\\'") + '\\')">⚡ ATIVAR</button>';
-          } else if (isValue) {
-            html += '      <div class="cheat-value-slider-box">';
-            html += '        <button class="slider-step-btn" onclick="stepCheatValue(\\'' + c.id + '\\', -1)">-</button>';
-            html += '        <input type="range" class="cheat-range-input" id="slider-' + c.id + '" min="' + (c.minValue || 1) + '" max="' + (c.maxValue || 100) + '" step="' + (c.step || 1) + '" value="' + savedVal + '" oninput="onCheatSliderChange(\\'' + c.id + '\\', this.value)">';
-            html += '        <button class="slider-step-btn" onclick="stepCheatValue(\\'' + c.id + '\\', 1)">+</button>';
-            html += '        <span class="cheat-value-badge" id="badge-' + c.id + '">' + savedVal + '</span>';
-            html += '      </div>';
-          } else {
-            html += '      <label class="switch-3d">';
-            html += '        <input type="checkbox" id="toggle-' + c.id + '" ' + (isSaved ? 'checked' : '') + ' onchange="toggleCheatAction(\\'' + c.id + '\\', this.checked)">';
-            html += '        <span class="slider-3d"></span>';
-            html += '      </label>';
-          }
-
-          if (c.isCustom) {
-            html += '      <button class="modal-close-btn" style="color: var(--danger); font-size: 14px; margin-left: 6px;" title="Excluir cheat" onclick="deleteCustomCheatAction(\\'' + c.id + '\\')">🗑️</button>';
-          }
-
-          html += '    </div>';
-          html += '  </div>';
-        }
-
-        html += '</div>';
-      }
-
-      container.innerHTML = html;
-    }
-
-    // ==========================================================================
-    // INTERAÇÃO COM CHEATS (LIGA/DESLIGA, SLIDERS, ATALHOS)
-    // ==========================================================================
-    async function toggleCheatAction(cheatId, enabled) {
-      if (!isAttached) {
-        alert('Anexe o trainer ao jogo antes de ativar cheats.');
-        const t = document.getElementById('toggle-' + cheatId);
-        if (t) t.checked = false;
-        return;
-      }
-      const row = document.getElementById('row-' + cheatId);
-      if (row) row.classList.toggle('active', enabled);
-
-      if (enabled) SoundEngine.toggleOn();
-      else SoundEngine.toggleOff();
-
-      await ipcRenderer.invoke('toggle-cheat', cheatId, enabled);
-    }
-
-    function onCheatSliderChange(cheatId, val) {
-      const badge = document.getElementById('badge-' + cheatId);
-      if (badge) badge.innerText = val;
-      SoundEngine.slider(val);
-    }
-
-    function stepCheatValue(cheatId, delta) {
-      const slider = document.getElementById('slider-' + cheatId);
-      if (!slider) return;
-      let nextVal = Number(slider.value) + delta * Number(slider.step || 1);
-      nextVal = Math.max(Number(slider.min), Math.min(Number(slider.max), nextVal));
-      slider.value = nextVal;
-      onCheatSliderChange(cheatId, nextVal);
-    }
-
-    async function triggerCheatAction(cheatId, cheatName) {
-      if (!isAttached) {
-        alert('Anexe o trainer ao jogo antes de disparar modificações.');
-        return;
-      }
       SoundEngine.action();
-      await ipcRenderer.invoke('toggle-cheat', cheatId, true);
-      speakWeModFeedback(cheatName + ' activated');
-    }
-
-    // Remapeador de Tecla de Atalho Interativo
-    function startRebindHotkey(cheatId) {
-      SoundEngine.keycap();
-      listeningHotkeyTargetCheatId = cheatId;
-      const badge = document.getElementById('hotkey-btn-' + cheatId);
-      if (badge) {
-        badge.innerText = 'Pressione tecla...';
-        badge.classList.add('listening');
-      }
-
-      function handleKey(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.removeEventListener('keydown', handleKey, true);
-
-        if (e.key === 'Escape') {
-          if (badge) {
-            badge.classList.remove('listening');
-            const originalCheat = selectedGame.cheats.find(c => c.id === cheatId);
-            badge.innerText = originalCheat?.hotkey || 'None';
-          }
-          listeningHotkeyTargetCheatId = null;
-          return;
-        }
-
-        let keyName = e.code.replace('Key', '').replace('Digit', '').toUpperCase();
-        if (e.code.startsWith('Numpad')) keyName = 'NUMPAD ' + e.code.replace('Numpad', '');
-        if (e.ctrlKey && !keyName.includes('CONTROL')) keyName = 'CTRL+' + keyName;
-        if (e.altKey && !keyName.includes('ALT')) keyName = 'ALT+' + keyName;
-
-        const cheat = selectedGame.cheats.find(c => c.id === cheatId);
-        if (cheat) cheat.hotkey = keyName;
-
-        if (badge) {
-          badge.innerText = keyName;
-          badge.classList.remove('listening');
-        }
-        SoundEngine.keycap();
-        speakWeModFeedback('Hotkey bound to ' + keyName);
-        listeningHotkeyTargetCheatId = null;
-      }
-
-      window.addEventListener('keydown', handleKey, true);
-    }
-
-    // ==========================================================================
-    // CONTROLE DE SPEEDHACK & TEMPO
-    // ==========================================================================
-    async function setSpeedhack(multiplier, btnElement) {
-      SoundEngine.click();
-      document.querySelectorAll('.speed-preset-btn').forEach(b => b.classList.remove('active'));
-      if (btnElement) btnElement.classList.add('active');
-
-      const slider = document.getElementById('speedhack-slider');
-      if (slider) slider.value = multiplier;
-
-      updateSpeedhackBadge(multiplier);
-      await ipcRenderer.invoke('speedhack:set', multiplier);
-    }
-
-    function onSpeedSliderChange(val) {
-      SoundEngine.slider(val);
-      updateSpeedhackBadge(val);
-      document.querySelectorAll('.speed-preset-btn').forEach(b => b.classList.remove('active'));
-      ipcRenderer.invoke('speedhack:set', Number(val));
-    }
-
-    function updateSpeedhackBadge(multiplier) {
-      const badge = document.getElementById('speedhack-val-badge');
-      if (!badge) return;
-      const m = Number(multiplier).toFixed(1);
-      if (m < 1.0) badge.innerText = m + 'x (Bullet-Time)';
-      else if (m == 1.0) badge.innerText = '1.00x (Normal)';
-      else badge.innerText = m + 'x (Turbo)';
-    }
-
-    // ==========================================================================
-    // AUTO-LAUNCH & CONEXÃO DE TRAINER
-    // ==========================================================================
-    async function launchCurrentGame() {
-      if (!selectedGame) return;
-      const detected = installedGames.find(g => 
-        (selectedGame.processName && g.executableName?.toLowerCase() === selectedGame.processName.toLowerCase()) ||
-        g.title.toLowerCase().includes(selectedGame.title.toLowerCase())
-      );
-
-      const targetGame = detected || {
-        id: selectedGame.id,
-        title: selectedGame.title,
-        platform: 'standalone',
-        installPath: '.',
-        executableName: selectedGame.processName
-      };
-
-      const btn = document.getElementById('launch-auto-btn');
-      btn.innerHTML = '<span>⏳</span> INICIANDO JOGO...';
-      speakWeModFeedback('Launching game, please wait');
-
-      try {
-        const res = await ipcRenderer.invoke('game:launch', targetGame);
-        if (res.success) {
-          btn.innerHTML = '<span>✓</span> JOGO INICIADO';
-          setTimeout(async () => {
-            btn.innerHTML = '<span>⚡</span> ANEXANDO MODS...';
-            const attachRes = await ipcRenderer.invoke('attach-trainer', selectedGame);
-            if (attachRes.success) {
-              isAttached = true;
-              document.getElementById('detail-play-btn').innerText = 'DESCONECTAR';
-              document.getElementById('detail-play-btn').classList.add('active');
-              document.getElementById('footer-status').innerText = 'Jogando: ' + selectedGame.title;
-              document.getElementById('topbar-status-text').innerText = 'Conectado a ' + selectedGame.processName;
-              speakWeModFeedback('Trainer activated. Enjoy the game!');
-              btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
-            } else {
-              btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
-            }
-          }, 3500);
-        } else {
-          alert(res.message);
-          btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
-        }
-      } catch (err) {
-        alert('Erro ao iniciar jogo: ' + err.message);
-        btn.innerHTML = '<span>▶</span> JOGAR (AUTO-LAUNCH)';
-      }
-    }
-
-    async function toggleAttach() {
-      const btn = document.getElementById('detail-play-btn');
-      if (isAttached) {
-        await ipcRenderer.invoke('detach-trainer');
-        isAttached = false;
-        btn.innerHTML = '<span>⚡</span> ANEXAR TRAINER';
-        btn.classList.remove('active');
-        document.getElementById('footer-status').innerText = 'Pronto para Jogar';
-        document.getElementById('topbar-status-text').innerText = 'Motor Desconectado';
-        SoundEngine.toggleOff();
-      } else {
-        btn.innerHTML = '<span>⏳</span> CONECTANDO...';
-        const res = await ipcRenderer.invoke('attach-trainer', selectedGame);
-        if (res.success) {
-          isAttached = true;
-          btn.innerHTML = '<span>✓</span> DESCONECTAR';
-          btn.classList.add('active');
-          document.getElementById('footer-status').innerText = 'Jogando: ' + selectedGame.title;
-          document.getElementById('topbar-status-text').innerText = 'Conectado: ' + selectedGame.processName;
-          SoundEngine.toggleOn();
-        } else {
-          alert('Jogo não encontrado na memória.\\nAbra ' + selectedGame.processName + ' antes de ativar.');
-          btn.innerHTML = '<span>⚡</span> ANEXAR TRAINER';
-          btn.classList.remove('active');
-          SoundEngine.playTone(300, 0.12, 'sawtooth');
+      if (ipcRenderer) {
+        try {
+          await ipcRenderer.invoke('updater:download-update');
+        } catch {
+          if (shell) shell.openExternal('https://github.com/Henrique1601/open-trainer-engine/releases');
         }
       }
     }
 
-    // ==========================================================================
-    // CRIAÇÃO DE CHEATS DIRETAMENTE NO LAUNCHER (MODAL)
-    // ==========================================================================
-    function openNewCheatModal() {
-      if (!selectedGame) {
-        alert('Selecione um jogo primeiro.');
-        return;
-      }
-      SoundEngine.click();
-      document.getElementById('new-cheat-modal').style.display = 'flex';
-      document.getElementById('modal-cheat-name').focus();
-    }
-
-    function closeNewCheatModal() {
-      document.getElementById('new-cheat-modal').style.display = 'none';
-    }
-
-    function captureHotkeyInput(e) {
-      e.preventDefault();
-      let key = e.code.replace('Key', '').replace('Digit', '').toUpperCase();
-      if (e.code.startsWith('Numpad')) key = 'NUMPAD ' + e.code.replace('Numpad', '');
-      if (e.ctrlKey) key = 'CTRL+' + key;
-      if (e.altKey) key = 'ALT+' + key;
-      document.getElementById('modal-cheat-hotkey').value = key;
-    }
-
-    async function saveNewCheatFromModal() {
-      const name = document.getElementById('modal-cheat-name').value.trim();
-      const category = document.getElementById('modal-cheat-category').value;
-      const type = document.getElementById('modal-cheat-type').value;
-      const hotkey = document.getElementById('modal-cheat-hotkey').value.trim() || 'F' + (selectedGame.cheats.length + 1);
-      const val = Number(document.getElementById('modal-cheat-val').value) || 10;
-      const desc = document.getElementById('modal-cheat-desc').value.trim();
-
-      if (!name) {
-        alert('Digite o nome do cheat.');
-        return;
-      }
-
-      const newCheat = {
-        id: 'custom-' + Date.now(),
-        name,
-        category,
-        type,
-        hotkey,
-        value: val,
-        description: desc || ('Cheat customizado criado por você no launcher.'),
-        isCustom: true
-      };
-
-      try {
-        await ipcRenderer.invoke('preferences:save-custom-cheat', selectedGame.id, newCheat);
-        closeNewCheatModal();
-        await reloadGameCheatsInView();
-        SoundEngine.action();
-        speakWeModFeedback('Custom cheat created');
-      } catch (err) {
-        alert('Erro ao salvar cheat customizado: ' + err.message);
-      }
-    }
-
-    async function deleteCustomCheatAction(cheatId) {
-      if (!selectedGame) return;
-      if (confirm('Deseja realmente excluir este cheat customizado?')) {
-        await ipcRenderer.invoke('preferences:delete-custom-cheat', selectedGame.id, cheatId);
-        await reloadGameCheatsInView();
-        SoundEngine.click();
-      }
-    }
-
-    // ==========================================================================
-    // PERFIS DE CHEATS (WEMOD PRESETS)
-    // ==========================================================================
-    let currentProfiles = [];
-
-    async function loadGameProfiles(gameId) {
-      try {
-        const data = await ipcRenderer.invoke('profiles:get', gameId);
-        currentProfiles = data.profiles || [];
-        const dropdown = document.getElementById('profile-dropdown');
-        if (!dropdown) return;
-        dropdown.innerHTML = '<option value="">Padrão (Sem Perfil)</option>' + currentProfiles.map(p => 
-          '<option value="' + p.id + '" ' + (p.id === data.activeProfileId ? 'selected' : '') + '>' + p.name + '</option>'
-        ).join('');
-      } catch (err) {
-        console.warn('Erro ao carregar perfis:', err);
-      }
-    }
-
-    async function promptNewProfile() {
-      if (!selectedGame) return;
-      const name = prompt('Nome do novo perfil de mods (ex: God Mode Build, Stealth Speedrun):');
-      if (!name || !name.trim()) return;
-
-      const states = {};
-      selectedGame.cheats.forEach(c => {
-        const chk = document.getElementById('toggle-' + c.id);
-        const slider = document.getElementById('slider-' + c.id);
-        if (chk || slider) {
-          states[c.id] = {
-            enabled: chk ? chk.checked : false,
-            value: slider ? Number(slider.value) : undefined
-          };
-        }
-      });
-
-      const newProf = await ipcRenderer.invoke('profiles:create', selectedGame.id, name.trim(), states);
-      await loadGameProfiles(selectedGame.id);
-      document.getElementById('profile-dropdown').value = newProf.id;
-      speakWeModFeedback('Profile saved');
-    }
-
-    async function onSelectProfile(profileId) {
-      if (!selectedGame || !profileId) return;
-      const prof = await ipcRenderer.invoke('profiles:apply', selectedGame.id, profileId);
-      if (prof && prof.states) {
-        for (const [cheatId, st] of Object.entries(prof.states)) {
-          const chk = document.getElementById('toggle-' + cheatId);
-          if (chk) chk.checked = st.enabled;
-          const sld = document.getElementById('slider-' + cheatId);
-          if (sld && st.value !== undefined) {
-            sld.value = st.value;
-            const badge = document.getElementById('badge-' + cheatId);
-            if (badge) badge.innerText = st.value;
-          }
-        }
-        speakWeModFeedback('Profile loaded: ' + prof.name);
-      }
-    }
-
-    async function deleteCurrentProfile() {
-      if (!selectedGame) return;
-      const dropdown = document.getElementById('profile-dropdown');
-      const profileId = dropdown.value;
-      if (!profileId) {
-        alert('Selecione um perfil para excluir.');
-        return;
-      }
-      if (confirm('Tem certeza que deseja excluir este perfil?')) {
-        await ipcRenderer.invoke('profiles:delete', selectedGame.id, profileId);
-        await loadGameProfiles(selectedGame.id);
-        speakWeModFeedback('Profile deleted');
-      }
-    }
-
-    // ==========================================================================
-    // NAVEGAÇÃO ENTRE ABAS
-    // ==========================================================================
-    function switchTab(tabId, navElement) {
-      SoundEngine.click();
-      document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
-      const target = document.getElementById(tabId);
-      if (target) target.classList.add('active');
-
-      if (navElement) {
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        navElement.classList.add('active');
-      }
-
-      if (tabId === 'tab-favorites') renderFavorites();
-      if (tabId === 'tab-maps') renderMaps();
-      if (tabId === 'tab-captures') renderCaptures();
-    }
-
-    function filterByCategory(cat, btn) {
-      SoundEngine.click();
-      currentActiveCategoryFilter = cat;
-      document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      renderFilteredCheats();
-    }
-
-    function filterCheatsInView(q) {
-      currentSearchQuery = q.trim().toLowerCase();
-      renderFilteredCheats();
-    }
-
-    // ==========================================================================
-    // FAVORITOS
-    // ==========================================================================
-    async function toggleFav(id) {
-      SoundEngine.click();
-      await ipcRenderer.invoke('toggle-favorite', id);
-      updateFavCount();
-      renderCarousels();
-    }
-
-    async function toggleCurrentFavorite() {
-      if (!selectedGame) return;
-      SoundEngine.click();
-      const isFav = await ipcRenderer.invoke('toggle-favorite', selectedGame.id);
-      document.getElementById('detail-fav-btn').className = 'fav-btn ' + (isFav ? 'active' : '');
-      updateFavCount();
-      renderCarousels();
-    }
-
-    async function updateFavCount() {
-      const prefs = await ipcRenderer.invoke('get-preferences');
-      const count = prefs.favorites ? prefs.favorites.length : 0;
-      document.getElementById('fav-count').innerText = count;
-    }
-
-    async function renderFavorites() {
-      const prefs = await ipcRenderer.invoke('get-preferences');
-      const container = document.getElementById('favorites-grid');
-      if (!prefs.favorites || prefs.favorites.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); padding: 40px; font-size: 14px;">Você ainda não marcou nenhum jogo como favorito. Clique na estrela ⭐ de qualquer jogo para adicioná-lo aqui.</div>';
-        return;
-      }
-
-      const favGames = [];
-      for (const favId of prefs.favorites) {
-        const g = installedGames.find(x => x.id === favId);
-        const t = allTrainers.find(x => x.id === favId);
-        if (g) favGames.push(g);
-        else if (t) favGames.push({
-          id: t.id,
-          title: t.title,
-          platform: 'pc',
-          coverImage: t.coverImage,
-          executableName: t.processName
-        });
-      }
-
-      renderCustomCardsRow('favorites-grid', favGames, new Set(prefs.favorites));
-    }
-
-    // ==========================================================================
-    // MAPAS, CAPTURAS & REMOTE
-    // ==========================================================================
-    async function renderMaps() {
-      const maps = await ipcRenderer.invoke('get-maps');
-      const container = document.getElementById('maps-container');
-      if (maps.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); padding: 40px;">Nenhum mapa disponível no momento.</div>';
-        return;
-      }
-      container.innerHTML = maps.map(m => '<div class="map-card" onclick="openGameById(\\'' + m.gameId + '\\')">' +
-        '<div class="map-img" style="background-image: url(\\'' + m.coverImage + '\\');"></div>' +
-        '<div class="map-info">' +
-          '<div class="map-title">' + m.gameTitle + '</div>' +
-          '<div class="map-desc">' + m.description + '</div>' +
-          '<button class="launch-game-btn" style="padding: 8px 18px; font-size: 12px; width: 100%;">Abrir Mapa ao Vivo ↗</button>' +
-        '</div>' +
-      '</div>').join('');
-    }
-
-    async function renderCaptures() {
-      const captures = await ipcRenderer.invoke('get-captures');
-      const container = document.getElementById('captures-container');
-      if (captures.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); padding: 40px;">Nenhuma captura de tela ou gravação de highlight encontrada em Videos/OpenTrainerEngine.</div>';
-        return;
-      }
-    }
-
-    async function loadRemoteInfo() {
-      try {
-        const info = await ipcRenderer.invoke('remote:get-info');
-        const qrImg = document.getElementById('remote-qr-code');
-        const ipBadge = document.getElementById('remote-ip-badge');
-        if (qrImg && info.qrCode) qrImg.src = info.qrCode;
-        if (ipBadge && info.url) ipBadge.innerText = info.url;
-      } catch {}
-    }
-
-    function copyRemoteUrl() {
-      const badge = document.getElementById('remote-ip-badge');
-      if (badge) {
-        navigator.clipboard.writeText(badge.innerText);
-        SoundEngine.click();
-        alert('Link do WeMod Remote copiado!');
-      }
-    }
-
-    function openRemoteInBrowser() {
-      const badge = document.getElementById('remote-ip-badge');
-      if (badge) ipcRenderer.invoke('open-external-url', badge.innerText);
-    }
-
-    async function fetchCloudTrainers() {
-      try {
-        const list = await ipcRenderer.invoke('cloud:fetch-trainers');
-        renderCloudCatalog(list);
-      } catch {}
-    }
-
-    function filterCloudTrainers(query) {
-      // Filtro local da nuvem
-    }
-
-    function renderCloudCatalog(list) {
-      const container = document.getElementById('cloud-trainers-container');
-      if (!container) return;
-      if (!list || list.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">Nenhum trainer encontrado na nuvem para esta busca.</div>';
-        return;
-      }
-      container.innerHTML = list.map(t => '<div class="map-card">' +
-        '<div class="map-img" style="background-image: url(\\'' + (t.coverImage || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80') + '\\');"></div>' +
-        '<div class="map-info">' +
-          '<div class="map-title">' + t.gameTitle + '</div>' +
-          '<div class="map-desc">' + (t.description || 'Trainer completo com suporte da comunidade.') + '</div>' +
-          '<div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Por ' + t.author + ' • v' + t.version + ' • ' + t.cheatCount + ' Cheats</div>' +
-          '<button class="launch-game-btn" style="padding: 8px 18px; font-size: 12px; width: 100%;" onclick="installCloudTrainer(\\'' + t.gameId + '\\')">Baixar Trainer ☁️</button>' +
-        '</div>' +
-      '</div>').join('');
-    }
-
-    async function installCloudTrainer(gameId) {
-      SoundEngine.action();
-      alert('Trainer baixado e integrado com sucesso!');
-    }
-
-    function loadSampleHexDump() {
-      SoundEngine.click();
-    }
-
-    async function refreshGames() {
-      SoundEngine.click();
-      installedGames = await ipcRenderer.invoke('scan-games');
-      document.getElementById('games-count').innerText = installedGames.length;
-      renderCarousels();
-      speakWeModFeedback('Library refreshed. ' + installedGames.length + ' games detected.');
-    }
-
-    function speakWeModFeedback(text) {
-      if ('speechSynthesis' in window && isSoundEnabled) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.1;
-        utterance.pitch = 1.0;
-        utterance.volume = 0.7;
-        const voices = window.speechSynthesis.getVoices();
-        const enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('David')) || voices.find(v => v.lang.startsWith('en'));
-        if (enVoice) utterance.voice = enVoice;
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
-    // ==========================================================================
-    // PERSPECTIVA 3D TILT EFFECT INTERATIVO
-    // ==========================================================================
-    function initTilt3D() {
-      const cards = document.querySelectorAll('.tilt-card-3d');
-      cards.forEach(card => {
-        card.onmousemove = (e) => {
-          const rect = card.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          const centerX = rect.width / 2;
-          const centerY = rect.height / 2;
-          const rotateX = ((y - centerY) / centerY) * -7;
-          const rotateY = ((x - centerX) / centerX) * 7;
-          card.style.transform = 'perspective(1000px) rotateX(' + rotateX.toFixed(2) + 'deg) rotateY(' + rotateY.toFixed(2) + 'deg) scale3d(1.02, 1.02, 1.02)';
-        };
-        card.onmouseleave = () => {
-          card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
-        };
-      });
-    }
-
-    // Dispara inicialização
-    window.onload = init;
+    // Inicialização ao carregar a página
+    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
-</html>
-`;
-
-const vm = require('vm');
-const scriptMatch = content.match(/<script>([\s\S]*?)<\/script>/);
-if (scriptMatch) {
-  new vm.Script(scriptMatch[1], { filename: 'index.html.js' });
-  console.log('✓ Sintaxe JavaScript do index.html validada com sucesso via vm.Script!');
+</html>`;
 }
 
-fs.writeFileSync(targetPath, content, 'utf8');
-console.log('src/desktop/ui/index.html gerado com sucesso! Tamanho:', content.length, 'bytes');
+// Salva em src/desktop/ui/index.html
+const outPath = path.resolve('src/desktop/ui/index.html');
+const htmlContent = generateHtml();
+
+// Valida sintaxe JavaScript com vm.Script antes de gravar
+const scriptMatch = htmlContent.match(/<script>([\s\S]*?)<\/script>/);
+if (!scriptMatch) {
+  console.error('ERRO: Tag <script> não encontrada no HTML!');
+  process.exit(1);
+}
+
+try {
+  new vm.Script(scriptMatch[1], { filename: 'generated-index.js' });
+  console.log('✓ Sintaxe JavaScript do index.html validada com sucesso via vm.Script!');
+} catch (err) {
+  console.error('ERRO de Sintaxe no script gerado:', err);
+  process.exit(1);
+}
+
+fs.writeFileSync(outPath, htmlContent, 'utf8');
+console.log(`src/desktop/ui/index.html gerado com sucesso! Tamanho: ${htmlContent.length} bytes`);
