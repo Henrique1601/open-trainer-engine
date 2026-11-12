@@ -1683,6 +1683,33 @@
       border: none;
       cursor: pointer;
     }
+
+    /* Toast Notification Não-Bloqueante */
+    .wand-toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .wand-toast {
+      background: #1e202a;
+      border: 1px solid var(--border-focus);
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      animation: toastSlideIn 0.2s ease-out;
+    }
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body data-theme="wemod">
@@ -2169,11 +2196,14 @@
 
         <div>
           <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">REMOTE SERVER (APP NO CELULAR)</label>
-          <p style="font-size: 12px; color: var(--text-dim);" id="settings-remote-url">Iniciando servidor local...</p>
+          <p style="font-size: 12px; color: var(--text-dim); word-break: break-all;" id="settings-remote-url">Iniciando servidor local...</p>
+          <img id="settings-remote-qr" alt="QR Code Remote" style="display: none; margin-top: 10px; width: 140px; height: 140px; border-radius: 8px; border: 1px solid var(--border-subtle);" />
         </div>
       </div>
     </div>
   </div>
+
+  <div class="wand-toast-container" id="wand-toast-container"></div>
 
   <!-- MODAL MAPA INTERATIVO FULLSCREEN -->
   <div class="wand-modal-backdrop" id="map-modal" onclick="if(event.target===this)closeMapModal()">
@@ -2236,12 +2266,42 @@
     let allTrainers = [];
     let installedGames = [];
     let allMaps = [];
+    let favoritesSet = new Set();
     let selectedGame = null;
     let isAttached = false;
     let isSoundEnabled = true;
     let currentTheme = 'wemod';
     let listeningHotkeyTargetCheatId = null;
     let currentCheatCategoryFilter = 'todos';
+    let latestUpdateInfo = null;
+
+    // Helpers de Sanitização Anti-XSS & Toast Não-Bloqueante
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeJsArg(value) {
+      return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('wand-toast-container');
+      if (!container) return;
+      const el = document.createElement('div');
+      el.className = 'wand-toast';
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.remove();
+      }, 3200);
+    }
 
     // Histórico de Navegação
     const navHistory = ['tab-home'];
@@ -2381,30 +2441,32 @@
     });
 
     function openProfilePage() {
-      alert('Perfil do Usuário: Henrique (Membro Wand PRO)');
+      showToast('Perfil ativo: Membro Open Trainer Engine PRO');
       const menu = document.getElementById('profile-dropdown-menu');
       if (menu) menu.classList.remove('show');
     }
 
     function openHelpModal() {
       SoundEngine.click();
-      if (shell) shell.openExternal('https://support.wemod.com');
-      else window.open('https://support.wemod.com', '_blank');
+      if (ipcRenderer) ipcRenderer.invoke('open-external-url', 'https://github.com/Henrique1601/open-trainer-engine#readme');
+      else window.open('https://github.com/Henrique1601/open-trainer-engine#readme', '_blank');
     }
 
     function openDiscord() {
       SoundEngine.click();
-      if (shell) shell.openExternal('https://discord.gg/wemod');
-      else window.open('https://discord.gg/wemod', '_blank');
+      if (ipcRenderer) ipcRenderer.invoke('open-external-url', 'https://discord.com');
+      else window.open('https://discord.com', '_blank');
     }
 
     function openFeedbackModal() {
       SoundEngine.click();
-      alert('Obrigado pelo seu feedback! Nossa equipe trabalha continuamente para trazer novidades.');
+      if (ipcRenderer) ipcRenderer.invoke('open-external-url', 'https://github.com/Henrique1601/open-trainer-engine/issues');
+      else showToast('Obrigado pelo feedback! Abra uma issue no repositório.');
     }
 
     function openSettingsModal() {
       SoundEngine.click();
+      loadRemoteInfo();
       const modal = document.getElementById('settings-modal');
       if (modal) modal.classList.add('show');
       const menu = document.getElementById('profile-dropdown-menu');
@@ -2419,17 +2481,17 @@
 
     function openProModal() {
       SoundEngine.action();
-      alert('Wand PRO Desbloqueado para todos os recursos da comunidade!');
+      showToast('Recursos PRO liberados gratuitamente pela comunidade!');
     }
 
     function openPointsModal() {
       SoundEngine.click();
-      alert('Você possui 2.450 Pontos Wand acumulados.');
+      showToast('Pontos Wand acumulados nesta sessão.');
     }
 
     function openPlaytimeTracker() {
       SoundEngine.click();
-      alert('Rastreador de Tempo: Mais de 120 horas jogadas com mods no Open Trainer Engine.');
+      showToast('Rastreador de tempo de mods ativo automaticamente.');
     }
 
     // ==========================================================================
@@ -2480,13 +2542,17 @@
           }
 
           const prefs = await ipcRenderer.invoke('get-preferences');
-          if (prefs && prefs.theme) {
-            applyAppTheme(prefs.theme);
+          if (prefs) {
+            if (prefs.theme) applyAppTheme(prefs.theme);
+            if (Array.isArray(prefs.favorites)) {
+              favoritesSet = new Set(prefs.favorites);
+            }
           }
 
           installedGames = await ipcRenderer.invoke('scan-games') || [];
           allTrainers = await ipcRenderer.invoke('list-trainers') || [];
           allMaps = await ipcRenderer.invoke('get-maps') || [];
+          loadRemoteInfo();
         }
       } catch (err) {
         console.warn('Erro ao inicializar IPC:', err);
@@ -2533,11 +2599,13 @@
       if (!container) return;
 
       container.innerHTML = installedGames.map(g => {
-        const cover = getGameCover(g);
+        const cover = escapeHtml(getGameCover(g));
+        const safeId = escapeJsArg(g.id);
+        const safeTitle = escapeHtml(g.title);
         const isActive = selectedGame && selectedGame.id === g.id;
-        return '<div class="sidebar-game-row ' + (isActive ? 'active' : '') + '" onclick="openGameById(\'' + g.id + '\')">' +
+        return '<div class="sidebar-game-row ' + (isActive ? 'active' : '') + '" onclick="openGameById(\'' + safeId + '\')">' +
           '<img class="sidebar-game-icon" src="' + cover + '" onerror="this.src=\'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg\'">' +
-          '<span class="sidebar-game-name" title="' + g.title + '">' + g.title + '</span>' +
+          '<span class="sidebar-game-name" title="' + safeTitle + '">' + safeTitle + '</span>' +
         '</div>';
       }).join('');
 
@@ -2547,58 +2615,47 @@
     function renderSidebarFavorites() {
       const favContainer = document.getElementById('sidebar-favorites-list');
       if (!favContainer) return;
-      // Pega os favoritos
-      const favGames = installedGames.slice(0, 2);
+      const favGames = installedGames.filter(g => favoritesSet.has(g.id));
       const favCount = document.getElementById('fav-count');
       if (favCount) favCount.innerText = favGames.length;
 
+      if (favGames.length === 0) {
+        favContainer.innerHTML = '<div style="padding: 4px 12px; font-size: 11px; color: var(--text-dim);">Nenhum favorito ainda</div>';
+        return;
+      }
+
       favContainer.innerHTML = favGames.map(g => {
-        const cover = getGameCover(g);
-        return '<div class="sidebar-game-row" onclick="openGameById(\'' + g.id + '\')">' +
+        const cover = escapeHtml(getGameCover(g));
+        const safeId = escapeJsArg(g.id);
+        const safeTitle = escapeHtml(g.title);
+        return '<div class="sidebar-game-row" onclick="openGameById(\'' + safeId + '\')">' +
           '<img class="sidebar-game-icon" src="' + cover + '">' +
-          '<span class="sidebar-game-name">' + g.title + '</span>' +
+          '<span class="sidebar-game-name">' + safeTitle + '</span>' +
         '</div>';
       }).join('');
     }
 
     // Renderiza as Prateleiras de Cápsulas da Home (Print 1)
     function renderHomeShelves() {
+      const renderCapsule = (g) => {
+        const hero = escapeHtml(getGameHero(g));
+        const safeId = escapeJsArg(g.id);
+        const safeTitle = escapeHtml(g.title);
+        return '<div class="game-capsule-card" style="background-image: url(\'' + hero + '\');" onclick="openGameById(\'' + safeId + '\')">' +
+          '<div class="capsule-overlay">' +
+            '<span class="capsule-title">' + safeTitle + '</span>' +
+          '</div>' +
+        '</div>';
+      };
+
       const installedShelf = document.getElementById('shelf-installed-games');
-      if (installedShelf) {
-        installedShelf.innerHTML = installedGames.map(g => {
-          const hero = getGameHero(g);
-          return '<div class="game-capsule-card" style="background-image: url(\'' + hero + '\');" onclick="openGameById(\'' + g.id + '\')">' +
-            '<div class="capsule-overlay">' +
-              '<span class="capsule-title">' + g.title + '</span>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-      }
+      if (installedShelf) installedShelf.innerHTML = installedGames.map(renderCapsule).join('');
 
       const popularShelf = document.getElementById('shelf-popular-games');
-      if (popularShelf) {
-        const popularList = installedGames.slice().reverse();
-        popularShelf.innerHTML = popularList.map(g => {
-          const hero = getGameHero(g);
-          return '<div class="game-capsule-card" style="background-image: url(\'' + hero + '\');" onclick="openGameById(\'' + g.id + '\')">' +
-            '<div class="capsule-overlay">' +
-              '<span class="capsule-title">' + g.title + '</span>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-      }
+      if (popularShelf) popularShelf.innerHTML = installedGames.slice().reverse().map(renderCapsule).join('');
 
       const recentShelf = document.getElementById('shelf-recent-games');
-      if (recentShelf) {
-        recentShelf.innerHTML = installedGames.map(g => {
-          const hero = getGameHero(g);
-          return '<div class="game-capsule-card" style="background-image: url(\'' + hero + '\');" onclick="openGameById(\'' + g.id + '\')">' +
-            '<div class="capsule-overlay">' +
-              '<span class="capsule-title">' + g.title + '</span>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-      }
+      if (recentShelf) recentShelf.innerHTML = installedGames.map(renderCapsule).join('');
     }
 
     // ==========================================================================
@@ -2667,30 +2724,46 @@
     // ==========================================================================
     // VIEW 3: BIBLIOTECA EM MODO LISTA (Print 4)
     // ==========================================================================
-    function renderLibraryTable() {
+    function renderLibraryTable(customList = null) {
       const container = document.getElementById('library-games-list');
       if (!container) return;
+      const source = customList || installedGames;
 
-      container.innerHTML = installedGames.map(g => {
-        const cover = getGameCover(g);
-        return '<div class="library-row" onclick="openGameById(\'' + g.id + '\')">' +
+      container.innerHTML = source.map(g => {
+        const cover = escapeHtml(getGameCover(g));
+        const safeId = escapeJsArg(g.id);
+        const safeTitle = escapeHtml(g.title);
+        const isFav = favoritesSet.has(g.id);
+        return '<div class="library-row" onclick="openGameById(\'' + safeId + '\')">' +
           '<div class="library-col-left">' +
             '<img class="library-game-icon" src="' + cover + '" onerror="this.src=\'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/10/header.jpg\'">' +
-            '<span class="library-game-title">' + g.title + '</span>' +
-            '<button class="library-star-btn" onclick="event.stopPropagation(); toggleLibraryFav(\'' + g.id + '\', this)">☆</button>' +
+            '<span class="library-game-title">' + safeTitle + '</span>' +
+            '<button class="library-star-btn ' + (isFav ? 'active' : '') + '" onclick="event.stopPropagation(); toggleLibraryFav(\'' + safeId + '\', this)">' + (isFav ? '⭐' : '☆') + '</button>' +
           '</div>' +
-          '<div class="library-col-center">Ação, Aventura, Mundo aberto, RPG</div>' +
+          '<div class="library-col-center">' + escapeHtml((g.platform || 'PC').toUpperCase()) + ' • Pronto para Mods</div>' +
           '<div class="library-col-right">' +
-            '<span class="platform-icon-tag" title="Steam">🎮</span>' +
+            '<span class="platform-icon-tag" title="' + escapeHtml(g.platform || 'PC') + '">🎮</span>' +
           '</div>' +
         '</div>';
       }).join('');
     }
 
-    function toggleLibraryFav(id, el) {
+    async function toggleLibraryFav(id, el) {
       SoundEngine.click();
-      el.classList.toggle('active');
-      el.innerText = el.classList.contains('active') ? '⭐' : '☆';
+      let newFavState = !favoritesSet.has(id);
+      if (ipcRenderer) {
+        try {
+          newFavState = await ipcRenderer.invoke('toggle-favorite', id);
+        } catch {}
+      }
+      if (newFavState) favoritesSet.add(id);
+      else favoritesSet.delete(id);
+
+      if (el) {
+        el.classList.toggle('active', newFavState);
+        el.innerText = newFavState ? '⭐' : '☆';
+      }
+      renderSidebarFavorites();
     }
 
     // ==========================================================================
@@ -2710,7 +2783,6 @@
 
       selectedGame = game;
 
-      // Atualiza elementos do DOM com verificações seguras
       const titleEl = document.getElementById('detail-title');
       if (titleEl) titleEl.innerText = game.title;
 
@@ -2725,8 +2797,22 @@
       const platformEl = document.getElementById('detail-platform-name');
       if (platformEl) platformEl.innerText = (game.platform || 'Steam').toUpperCase();
 
-      const playtimeEl = document.getElementById('detail-playtime');
-      if (playtimeEl) playtimeEl.innerText = '0,8 h';
+      // Carrega estatísticas e estado salvo real do jogo via IPC
+      let savedMods = {};
+      if (ipcRenderer) {
+        try {
+          const stats = await ipcRenderer.invoke('get-game-stats', game.id);
+          if (stats) {
+            savedMods = stats.savedMods || {};
+            const playtimeEl = document.getElementById('detail-playtime');
+            if (playtimeEl) playtimeEl.innerText = stats.formattedPlaytime || '0 min';
+            const lastPlayedEl = document.getElementById('detail-last-played');
+            if (lastPlayedEl) lastPlayedEl.innerText = stats.stats?.lastPlayed || 'Nunca';
+            const favBtn = document.getElementById('detail-fav-star-btn');
+            if (favBtn) favBtn.innerText = stats.isFavorite ? '⭐' : '☆';
+          }
+        } catch {}
+      }
 
       // Ativa o widget na Sidebar (Print 5)
       const sidebarWidget = document.getElementById('sidebar-active-game-widget');
@@ -2736,12 +2822,10 @@
         sidebarWidget.classList.add('show');
       }
 
-      // Atualiza mapa widget da direita
       const mapTitle = document.getElementById('detail-widget-map-title');
       if (mapTitle) mapTitle.innerText = 'Mapa de ' + game.title;
 
-      // Carrega cheats inteligentes do backend
-      await loadGameCheats(game);
+      await loadGameCheats(game, savedMods);
 
       switchTab('tab-game-details');
       renderSidebarLists();
@@ -2756,7 +2840,7 @@
       }
     }
 
-    async function loadGameCheats(game) {
+    async function loadGameCheats(game, savedMods = {}) {
       let cheats = [];
       try {
         if (ipcRenderer) {
@@ -2786,6 +2870,13 @@
         ];
       }
 
+      cheats.forEach(c => {
+        if (savedMods && savedMods[c.id]) {
+          c.active = Boolean(savedMods[c.id].enabled);
+          if (savedMods[c.id].value !== undefined) c.value = savedMods[c.id].value;
+        }
+      });
+
       selectedGame.cheats = cheats;
       renderCheatsList(cheats);
     }
@@ -2812,33 +2903,36 @@
 
         items.forEach(c => {
           const isActive = Boolean(c.active);
-          const hotkey = c.hotkey || 'F1';
+          const hotkey = escapeHtml(c.hotkey || 'F1');
+          const safeCheatId = escapeJsArg(c.id);
+          const safeDomId = escapeHtml(c.id);
+          const safeCheatName = escapeHtml(c.name);
 
           if (c.type === 'slider') {
             html += '<div class="cheat-row-item">' +
               '<div class="cheat-name-wrap">' +
                 '<span class="cheat-icon-bolt">⚡</span>' +
-                '<span class="cheat-title-text">' + c.name + '</span>' +
+                '<span class="cheat-title-text">' + safeCheatName + '</span>' +
               '</div>' +
               '<div class="cheat-controls-wrap">' +
-                '<button class="search-btn-action" onclick="stepSliderValue(\'' + c.id + '\', -0.5)">-</button>' +
-                '<span id="val-' + c.id + '" style="font-weight: 800; font-size: 12px; color: var(--accent); min-width: 40px; text-align: center;">' + (c.value || 1.0) + 'x</span>' +
-                '<button class="search-btn-action" onclick="stepSliderValue(\'' + c.id + '\', 0.5)">+</button>' +
-                '<div class="hotkey-badge-3d" onclick="startRebindHotkey(\'' + c.id + '\', this)">' + hotkey + '</div>' +
+                '<button class="search-btn-action" onclick="stepSliderValue(\'' + safeCheatId + '\', -0.5)">-</button>' +
+                '<span id="val-' + safeDomId + '" style="font-weight: 800; font-size: 12px; color: var(--accent); min-width: 40px; text-align: center;">' + (c.value || 1.0) + 'x</span>' +
+                '<button class="search-btn-action" onclick="stepSliderValue(\'' + safeCheatId + '\', 0.5)">+</button>' +
+                '<div class="hotkey-badge-3d" onclick="startRebindHotkey(\'' + safeCheatId + '\', this)">' + hotkey + '</div>' +
               '</div>' +
             '</div>';
           } else {
             html += '<div class="cheat-row-item">' +
               '<div class="cheat-name-wrap">' +
                 '<span class="cheat-icon-bolt">⚡</span>' +
-                '<span class="cheat-title-text">' + c.name + '</span>' +
+                '<span class="cheat-title-text">' + safeCheatName + '</span>' +
               '</div>' +
               '<div class="cheat-controls-wrap">' +
-                '<div class="wemod-toggle-pill ' + (isActive ? 'on' : 'off') + '" id="toggle-pill-' + c.id + '" onclick="toggleCheatAction(\'' + c.id + '\')">' +
+                '<div class="wemod-toggle-pill ' + (isActive ? 'on' : 'off') + '" id="toggle-pill-' + safeDomId + '" onclick="toggleCheatAction(\'' + safeCheatId + '\')">' +
                   '<span class="toggle-segment off">Off</span>' +
                   '<span class="toggle-segment on">On</span>' +
                 '</div>' +
-                '<div class="hotkey-badge-3d" id="hotkey-' + c.id + '" onclick="startRebindHotkey(\'' + c.id + '\', this)">' + hotkey + '</div>' +
+                '<div class="hotkey-badge-3d" id="hotkey-' + safeDomId + '" onclick="startRebindHotkey(\'' + safeCheatId + '\', this)">' + hotkey + '</div>' +
               '</div>' +
             '</div>';
           }
@@ -2982,25 +3076,45 @@
       }
     }
 
-    function saveCurrentGameModsPreset() {
+    async function saveCurrentGameModsPreset() {
       SoundEngine.action();
-      alert('Configuração de mods salva com sucesso para ' + (selectedGame?.title || 'este jogo') + '!');
+      if (!selectedGame) return;
+      const states = {};
+      (selectedGame.cheats || []).forEach(c => {
+        states[c.id] = { enabled: Boolean(c.active), value: c.value };
+      });
+      if (ipcRenderer) {
+        try {
+          await ipcRenderer.invoke('profiles:create', selectedGame.id, 'Preset Rápido', states);
+        } catch {}
+      }
+      showToast('Mods salvos para ' + selectedGame.title + '!');
     }
 
-    function toggleCurrentGameFavorite() {
+    async function toggleCurrentGameFavorite() {
       SoundEngine.click();
+      if (!selectedGame) return;
+      let isFav = !favoritesSet.has(selectedGame.id);
+      if (ipcRenderer) {
+        try {
+          isFav = await ipcRenderer.invoke('toggle-favorite', selectedGame.id);
+        } catch {}
+      }
+      if (isFav) favoritesSet.add(selectedGame.id);
+      else favoritesSet.delete(selectedGame.id);
+
       const starBtn = document.getElementById('detail-fav-star-btn');
       if (starBtn) {
-        starBtn.classList.toggle('active');
+        starBtn.classList.toggle('active', isFav);
+        starBtn.innerText = isFav ? '⭐' : '☆';
       }
-      if (selectedGame && ipcRenderer) {
-        ipcRenderer.invoke('toggle-favorite', selectedGame.id);
-      }
+      renderSidebarFavorites();
+      renderLibraryTable();
     }
 
     function toggleGameNotifications() {
       SoundEngine.click();
-      alert('Notificações de atualizações para este jogo ativadas!');
+      showToast('Notificações de atualizações para este jogo ativadas!');
     }
 
     function openGameMapTab() {
@@ -3021,17 +3135,26 @@
 
     function openGameOptionsMenu() {
       SoundEngine.click();
-      alert('Opções do jogo: Iniciar sem mods, verificar arquivos, reparar integridade.');
+      showToast('Use o botão Jogar para iniciar com mods ou clique no ícone de engrenagem.');
     }
 
-    function toggleGameRecording() {
+    async function toggleGameRecording() {
       SoundEngine.click();
-      alert('Gravador de Highlights do WeMod iniciado!');
+      if (ipcRenderer) {
+        try {
+          const res = await ipcRenderer.invoke('game:capture-screenshot');
+          if (res && res.success) {
+            showToast('Captura salva com sucesso!');
+            return;
+          }
+        } catch {}
+      }
+      showToast('Captura de tela solicitada!');
     }
 
     function playVideoCompanion() {
       SoundEngine.action();
-      alert('Reproduzindo Guia e Destaques em Vídeo!');
+      showToast('Abrindo guia de gameplay...');
     }
 
     // ==========================================================================
@@ -3047,22 +3170,7 @@
 
       const q = query.toLowerCase();
       const filtered = installedGames.filter(g => g.title.toLowerCase().includes(q));
-
-      // Filtra biblioteca
-      const container = document.getElementById('library-games-list');
-      if (container) {
-        container.innerHTML = filtered.map(g => {
-          const cover = getGameCover(g);
-          return '<div class="library-row" onclick="openGameById(\'' + g.id + '\')">' +
-            '<div class="library-col-left">' +
-              '<img class="library-game-icon" src="' + cover + '">' +
-              '<span class="library-game-title">' + g.title + '</span>' +
-            '</div>' +
-            '<div class="library-col-center">Ação, Aventura</div>' +
-            '<div class="library-col-right">🎮</div>' +
-          '</div>';
-        }).join('');
-      }
+      renderLibraryTable(filtered);
     }
 
     function changeHeroSlide(direction) {
@@ -3143,7 +3251,7 @@
       const hotkey = hotkeyInput && hotkeyInput.value.trim() ? hotkeyInput.value.trim() : 'F11';
 
       if (!name) {
-        alert('Por favor, informe o nome do cheat!');
+        showToast('Por favor, informe o nome do cheat!');
         return;
       }
 
@@ -3189,14 +3297,31 @@
       }
     }
 
+    async function loadRemoteInfo() {
+      if (!ipcRenderer) return;
+      try {
+        const info = await ipcRenderer.invoke('remote:get-info');
+        const urlEl = document.getElementById('settings-remote-url');
+        const qrEl = document.getElementById('settings-remote-qr');
+        if (urlEl && info && info.url) {
+          urlEl.innerText = info.url;
+        }
+        if (qrEl && info && info.qrCode) {
+          qrEl.src = info.qrCode;
+          qrEl.style.display = 'block';
+        }
+      } catch {}
+    }
+
     async function checkForUpdates() {
       if (!ipcRenderer) return;
       try {
         const info = await ipcRenderer.invoke('check-for-updates');
         if (info && info.hasUpdate) {
+          latestUpdateInfo = info;
           const banner = document.getElementById('update-banner');
           const text = document.getElementById('update-text');
-          if (text) text.innerText = '🚀 Nova versão disponível: ' + info.latestVersion;
+          if (text) text.innerText = '🚀 Nova versão disponível: v' + info.latestVersion;
           if (banner) banner.style.display = 'flex';
         }
       } catch {}
@@ -3209,13 +3334,36 @@
 
     async function startInAppUpdate() {
       SoundEngine.action();
-      if (ipcRenderer) {
-        try {
-          await ipcRenderer.invoke('updater:download-update');
-        } catch {
-          if (shell) shell.openExternal('https://github.com/Henrique1601/open-trainer-engine/releases');
+      if (!ipcRenderer) return;
+      if (latestUpdateInfo && latestUpdateInfo.downloadUrl) {
+        showToast('Baixando atualização...');
+        const res = await ipcRenderer.invoke('updater:download-update', latestUpdateInfo.downloadUrl);
+        if (res && res.success) {
+          showToast('Download concluído! Instalando...');
+          await ipcRenderer.invoke('updater:install-and-restart', true);
+          return;
         }
       }
+      await ipcRenderer.invoke('open-external-url', 'https://github.com/Henrique1601/open-trainer-engine/releases');
+    }
+
+    if (ipcRenderer) {
+      ipcRenderer.on('cheat-toggled-event', (_event, data) => {
+        if (!selectedGame || !selectedGame.cheats || !data) return;
+        const c = selectedGame.cheats.find(x => x.id === data.cheatId);
+        if (c) {
+          c.active = Boolean(data.enabled);
+          const pill = document.getElementById('toggle-pill-' + c.id);
+          if (pill) pill.className = 'wemod-toggle-pill ' + (c.active ? 'on' : 'off');
+        }
+      });
+
+      ipcRenderer.on('playtime-updated', (_event, data) => {
+        if (selectedGame && data && selectedGame.id === data.gameId) {
+          const playtimeEl = document.getElementById('detail-playtime');
+          if (playtimeEl) playtimeEl.innerText = data.formatted;
+        }
+      });
     }
 
     // Inicialização ao carregar a página

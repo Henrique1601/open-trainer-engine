@@ -1,27 +1,17 @@
-import { app, BrowserWindow, ipcMain, globalShortcut, shell, screen } from 'electron';
+import { app, BrowserWindow, globalShortcut, screen } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { GameDetector } from '../core/scanner/game-detector.js';
-import { ProcessManager } from '../core/memory/process-manager.js';
-import { TrainerLoader } from '../core/trainer/trainer-loader.js';
 import { TrainerSession } from '../core/trainer/trainer-session.js';
-import { CheatEngineTableImporter } from '../core/importers/ct-importer.js';
 import { PreferencesStore } from '../core/storage/preferences-store.js';
-import { AppUpdater } from '../core/updater/app-updater.js';
-import { GameMapsManager } from '../core/maps/game-maps.js';
-import { CapturesManager } from '../core/captures/captures-manager.js';
 import { RemoteServer } from '../core/remote/remote-server.js';
 import { SpeedhackEngine } from '../core/memory/speedhack.js';
-import { CloudTrainerHub, CloudTrainerEntry } from '../core/cloud/cloud-trainer-hub.js';
-import { HexViewer } from '../core/studio/hex-viewer.js';
-import { AntiCheatDetector } from '../core/security/anti-cheat-detector.js';
-import { ProfileManager } from '../core/storage/profile-manager.js';
-import { GameLauncher } from '../core/scanner/game-launcher.js';
-import { GameProcessPauser } from '../core/memory/process-pauser.js';
+import { CloudTrainerHub } from '../core/cloud/cloud-trainer-hub.js';
 import { GameScreenshotCapture } from '../core/captures/screenshot-capture.js';
-import { GameArtResolver } from '../core/scanner/game-art-resolver.js';
-import { DefaultCheatsProvider } from '../core/trainer/default-cheats-provider.js';
+import { registerLibraryIpc } from './ipc/ipc-library.js';
+import { registerTrainerIpc } from './ipc/ipc-trainer.js';
+import { registerSystemIpc } from './ipc/ipc-system.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,9 +22,17 @@ let activeSession: TrainerSession | null = null;
 let activeSessionTimer: NodeJS.Timeout | null = null;
 let activeGameId: string | null = null;
 
-const remoteServer = new RemoteServer({ port: 38474 });
+const remoteAuthToken = crypto.randomBytes(8).toString('hex');
+const remoteServer = new RemoteServer({ port: 38474, authToken: remoteAuthToken });
 const speedhack = new SpeedhackEngine();
 let cloudHub: CloudTrainerHub | null = null;
+
+function getCloudHub(): CloudTrainerHub {
+  if (!cloudHub) {
+    cloudHub = new CloudTrainerHub(path.join(app.getPath('userData'), 'cloud-trainers-cache.json'));
+  }
+  return cloudHub;
+}
 
 function syncRemoteServerState() {
   if (overlayWindow && activeSession) {
@@ -82,9 +80,7 @@ function getAppIconPath(): string {
     path.join(app.getAppPath(), 'build', 'icon.ico')
   ];
   for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      return p;
-    }
+    if (fs.existsSync(p)) return p;
   }
   return '';
 }
@@ -135,7 +131,6 @@ function createOverlayWindow() {
 
   overlayWindow.loadFile(path.join(__dirname, 'ui', 'overlay.html'));
 
-  const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width } = primaryDisplay.workAreaSize;
   overlayWindow.setPosition(width - 420, 40);
@@ -155,9 +150,8 @@ function cleanupSession() {
 }
 
 app.whenReady().then(async () => {
-  cloudHub = new CloudTrainerHub(path.join(app.getPath('userData'), 'cloud-trainers-cache.json'));
+  getCloudHub();
 
-  // Inicia o servidor do WeMod Remote (Mobile PWA)
   try {
     const remoteUrl = await remoteServer.start();
     console.log(`[WeMod Remote] Servidor mobile iniciado em: ${remoteUrl}`);
@@ -176,13 +170,33 @@ app.whenReady().then(async () => {
     console.warn('[WeMod Remote] Não foi possível iniciar o servidor mobile:', err);
   }
 
+  registerLibraryIpc(getCloudHub);
+  registerTrainerIpc({
+    getMainWindow: () => mainWindow,
+    getOverlayWindow: () => overlayWindow,
+    getActiveSession: () => activeSession,
+    setActiveSession: (session, gameId) => {
+      activeSession = session;
+      activeGameId = gameId;
+    },
+    getActiveGameId: () => activeGameId,
+    setActiveSessionTimer: (timer) => {
+      activeSessionTimer = timer;
+    },
+    cleanupSession,
+    syncRemoteServerState,
+    speedhack
+  });
+  registerSystemIpc({
+    getMainWindow: () => mainWindow,
+    getOverlayWindow: () => overlayWindow,
+    remoteServer
+  });
+
   createMainWindow();
   createOverlayWindow();
 
-  // Atalho global Ctrl+G para alternar o HUD In-Game
-  
-  // Atalho global F11 para Screenshot In-Game
-  globalShortcut.register('F11', async () => {
+  globalShortcut.register('CommandOrControl+Shift+F11', async () => {
     const res = await GameScreenshotCapture.capturePrimaryScreen();
     if (res.success) {
       mainWindow?.webContents.send('screenshot-taken-event', res);
@@ -207,439 +221,4 @@ app.whenReady().then(async () => {
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   cleanupSession();
-});
-
-// ==============================================================================
-// Comunicação IPC
-// ==============================================================================
-
-ipcMain.handle('scan-games', async () => {
-  const games = GameDetector.scanAll();
-  return GameArtResolver.enrichAll(games);
-});
-
-ipcMain.handle('window:minimize', async () => {
-  mainWindow?.minimize();
-  return true;
-});
-
-ipcMain.handle('window:maximize', async () => {
-  if (mainWindow?.isMaximized()) {
-    mainWindow?.unmaximize();
-  } else {
-    mainWindow?.maximize();
-  }
-  return mainWindow?.isMaximized() || false;
-});
-
-ipcMain.handle('window:close', async () => {
-  mainWindow?.close();
-  return true;
-});
-
-ipcMain.handle('window:is-maximized', async () => {
-  return mainWindow?.isMaximized() || false;
-});
-
-ipcMain.handle('list-trainers', async () => {
-  const configsDir = path.resolve('configs');
-  return TrainerLoader.scanTrainersDirectory(configsDir);
-});
-
-ipcMain.handle('get-running-processes', async () => {
-  return ProcessManager.listProcesses();
-});
-
-ipcMain.handle('attach-trainer', async (_event, contract) => {
-  cleanupSession();
-
-  try {
-    const session = new TrainerSession(contract);
-    await session.attach();
-    activeSession = session;
-    activeGameId = contract.id;
-
-    // Inicia rastreamento de horas jogadas com mods com precisão de segundos
-    PreferencesStore.recordSessionStart(contract.id);
-    activeSessionTimer = setInterval(() => {
-      if (activeGameId) {
-        PreferencesStore.addPlaytime(activeGameId, 5); // acumula a cada 5 segundos
-        const updated = PreferencesStore.get().playtime[activeGameId];
-        mainWindow?.webContents.send('playtime-updated', {
-          gameId: activeGameId,
-          formatted: PreferencesStore.formatPlaytime(updated.totalSeconds),
-          totalSeconds: updated.totalSeconds
-        });
-      }
-    }, 5000);
-
-    // Auto-restauração de mods salvos
-    const savedStates = PreferencesStore.getSavedCheatStates(contract.id);
-    for (const cheatId of Object.keys(savedStates)) {
-      if (savedStates[cheatId].enabled) {
-        try {
-          session.toggleCheat(cheatId, true);
-        } catch {}
-      }
-    }
-
-    session.on('cheatToggled', data => {
-      // Salva o estado do mod persistente
-      if (activeGameId) {
-        PreferencesStore.saveCheatState(activeGameId, data.cheatId, data.enabled);
-      }
-      syncRemoteServerState();
-      mainWindow?.webContents.send('cheat-toggled-event', data);
-      overlayWindow?.webContents.send('cheat-toggled-event', data);
-    });
-
-    syncRemoteServerState();
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
-});
-
-ipcMain.handle('toggle-cheat', async (_event, cheatId, forceState, gameId) => {
-  const gId = gameId || activeGameId || 'active-game';
-  let newState = false;
-  if (activeSession) {
-    try {
-      newState = activeSession.toggleCheat(cheatId, forceState);
-    } catch {
-      const saved = PreferencesStore.getSavedCheatStates(gId);
-      newState = forceState !== undefined ? forceState : !(saved[cheatId]?.enabled);
-    }
-  } else {
-    const saved = PreferencesStore.getSavedCheatStates(gId);
-    newState = forceState !== undefined ? forceState : !(saved[cheatId]?.enabled);
-  }
-  PreferencesStore.saveCheatState(gId, cheatId, newState);
-  syncRemoteServerState();
-  return { cheatId, enabled: newState };
-});
-
-ipcMain.handle('detach-trainer', async () => {
-  cleanupSession();
-  return { success: true };
-});
-
-ipcMain.handle('import-ct', async (_event, ctPath, processName) => {
-  const contract = CheatEngineTableImporter.importFromCT(ctPath, processName);
-  return contract;
-});
-
-// ==============================================================================
-// Preferências, Favoritos e Horas Jogadas
-// ==============================================================================
-ipcMain.handle('toggle-favorite', async (_event, gameId) => {
-  return PreferencesStore.toggleFavorite(gameId);
-});
-
-ipcMain.handle('app:get-version', async () => {
-  return app.getVersion() || AppUpdater.getCurrentVersion();
-});
-
-ipcMain.handle('get-preferences', async () => {
-  return PreferencesStore.get();
-});
-
-ipcMain.handle('get-game-stats', async (_event, gameId) => {
-  const prefs = PreferencesStore.get();
-  const stats = prefs.playtime[gameId] || { totalSeconds: 0, lastPlayed: 'Nunca', sessionsCount: 0 };
-  const savedMods = prefs.modStates[gameId] || {};
-  const isFav = prefs.favorites.includes(gameId);
-  return {
-    isFavorite: isFav,
-    stats,
-    formattedPlaytime: PreferencesStore.formatPlaytime(stats.totalSeconds),
-    savedMods
-  };
-});
-
-// ==============================================================================
-// Verificação de Atualizações do App
-// ==============================================================================
-ipcMain.handle('check-for-updates', async () => {
-  return AppUpdater.checkForUpdates();
-});
-
-ipcMain.handle('open-external-url', async (_event, url) => {
-  shell.openExternal(url);
-  return true;
-});
-
-// ==============================================================================
-// Mapas ao Vivo & Clipes de Gravação
-// ==============================================================================
-ipcMain.handle('get-maps', async () => {
-  return GameMapsManager.getAllMaps();
-});
-
-ipcMain.handle('get-captures', async () => {
-  return CapturesManager.listCaptures();
-});
-
-// ==============================================================================
-// WeMod Remote (Mobile PWA & QR Code)
-// ==============================================================================
-ipcMain.handle('remote:get-info', async () => {
-  return {
-    url: remoteServer.getRemoteUrl(),
-    qrCode: remoteServer.getQrCodeUrl()
-  };
-});
-
-// ==============================================================================
-// Speedhack Nativo (Controle de Velocidade / Bullet-Time)
-// ==============================================================================
-ipcMain.handle('speedhack:set', async (_event, multiplier, targetPid, processName) => {
-  let pid = targetPid || null;
-  if (!pid && activeSession) {
-    pid = (activeSession as any).getProcessInfo?.()?.pid || (activeSession as any).processInfo?.pid || null;
-  }
-  if (!pid && processName) {
-    try {
-      const detected = ProcessManager.findProcessByName(processName);
-      if (detected) pid = detected.pid;
-    } catch {}
-  }
-  const result = speedhack.applyToProcess(pid, multiplier);
-  mainWindow?.webContents.send('speedhack:status', result);
-  overlayWindow?.webContents.send('speedhack:status', result);
-  return result;
-});
-
-// ==============================================================================
-// Catálogo Rico de Cheats & Cheats Customizados
-// ==============================================================================
-ipcMain.handle('trainer:get-cheats', async (_event, gameId: string, arg2?: string, arg3?: string) => {
-  const isArg2Exe = Boolean(arg2 && (arg2.toLowerCase().endsWith('.exe') || arg2.includes('.')));
-  const title = isArg2Exe ? (arg3 || gameId) : (arg2 || gameId);
-  const processName = isArg2Exe ? arg2 : arg3;
-
-  const defaults = DefaultCheatsProvider.getCheatsForGame(title || gameId, processName);
-  const staticDirs = [path.resolve('configs'), path.resolve('configs/trainers')];
-  let staticTrainer: any = null;
-  for (const dir of staticDirs) {
-    if (fs.existsSync(dir)) {
-      const trainers = TrainerLoader.scanTrainersDirectory(dir);
-      staticTrainer = trainers.find((t: any) =>
-        t.id === gameId ||
-        (processName && t.processName && t.processName.toLowerCase() === processName.toLowerCase()) ||
-        t.title.toLowerCase().includes((title || '').toLowerCase()) ||
-        (title && t.title.toLowerCase() === title.toLowerCase())
-      );
-      if (staticTrainer) break;
-    }
-  }
-
-  const customCheats = PreferencesStore.getCustomCheats(gameId);
-
-  const cheatMap = new Map<string, any>();
-  for (const c of defaults) cheatMap.set(c.id, c);
-  if (staticTrainer) {
-    for (const c of staticTrainer.cheats) cheatMap.set(c.id, c);
-  }
-  for (const c of customCheats) cheatMap.set(c.id, c);
-
-  return Array.from(cheatMap.values());
-});
-
-ipcMain.handle('custom-cheats:get', async (_event, gameId: string) => {
-  return PreferencesStore.getCustomCheats(gameId);
-});
-
-ipcMain.handle('custom-cheats:add', async (_event, gameId: string, cheat: any) => {
-  return PreferencesStore.addCustomCheat(gameId, cheat);
-});
-
-ipcMain.handle('custom-cheats:delete', async (_event, gameId: string, cheatId: string) => {
-  return PreferencesStore.deleteCustomCheat(gameId, cheatId);
-});
-
-// ==============================================================================
-// Temas Visuais (WeMod, Cyberpunk, Obsidian, Crimson, Frost)
-// ==============================================================================
-ipcMain.handle('theme:get', async () => {
-  return PreferencesStore.getTheme();
-});
-
-ipcMain.handle('theme:set', async (_event, theme: string) => {
-  const applied = PreferencesStore.setTheme(theme);
-  mainWindow?.webContents.send('theme:changed', applied);
-  overlayWindow?.webContents.send('theme:changed', applied);
-  return applied;
-});
-
-ipcMain.handle('preferences:save-theme', async (_event, theme: string) => {
-  const applied = PreferencesStore.setTheme(theme);
-  mainWindow?.webContents.send('theme:changed', applied);
-  overlayWindow?.webContents.send('theme:changed', applied);
-  return applied;
-});
-
-ipcMain.handle('speedhack:get', async () => {
-  return speedhack.getState();
-});
-
-// ==============================================================================
-// Catálogo de Trainers na Nuvem (Cloud Trainers Hub)
-// ==============================================================================
-ipcMain.handle('cloud:fetch-catalog', async () => {
-  if (!cloudHub) {
-    cloudHub = new CloudTrainerHub(path.join(app.getPath('userData'), 'cloud-trainers-cache.json'));
-  }
-  return cloudHub.fetchCatalog();
-});
-
-ipcMain.handle('cloud:install-trainer', async (_event, entry: CloudTrainerEntry) => {
-  if (!cloudHub) {
-    cloudHub = new CloudTrainerHub(path.join(app.getPath('userData'), 'cloud-trainers-cache.json'));
-  }
-  const targetDir = path.resolve('configs/trainers');
-  return cloudHub.installTrainer(entry, targetDir);
-});
-
-// ==============================================================================
-// Segurança: Detecção de Anti-Cheats Ativos (Safe Guard)
-// ==============================================================================
-ipcMain.handle('security:check-anti-cheat', async () => {
-  const procs = ProcessManager.listProcesses().map(p => p.name);
-  return AntiCheatDetector.checkRunningProcesses(procs);
-});
-
-// ==============================================================================
-// Cheat Maker Studio: Hex Memory Viewer & Disassembler
-// ==============================================================================
-ipcMain.handle('studio:hex-dump', async (_event, hexBytes: string, baseAddressStr?: string) => {
-  const clean = hexBytes.replace(/\s+/g, '');
-  const buf = Buffer.from(clean, 'hex');
-  const baseAddr = baseAddressStr ? BigInt(baseAddressStr) : 0n;
-  const dump = HexViewer.formatHexDump(buf, baseAddr);
-  const disasm = HexViewer.disassembleQuick(buf);
-  return { dump, disasm };
-});
-
-
-// ==============================================================================
-// WeMod 1-Click Auto Play & Game Launcher
-// ==============================================================================
-ipcMain.handle('game:launch', async (_event, game) => {
-  return GameLauncher.launch(game);
-});
-
-// ==============================================================================
-// WeMod Cheat Profiles (Presets por Jogo / Save)
-// ==============================================================================
-ipcMain.handle('profiles:get', async (_event, gameId) => {
-  return {
-    profiles: ProfileManager.getProfiles(gameId),
-    activeProfileId: ProfileManager.getActiveProfileId(gameId)
-  };
-});
-
-ipcMain.handle('profiles:create', async (_event, gameId, name, states) => {
-  return ProfileManager.createProfile(gameId, name, states);
-});
-
-ipcMain.handle('profiles:apply', async (_event, gameId, profileId) => {
-  const profile = ProfileManager.applyProfile(gameId, profileId);
-  if (profile && activeSession) {
-    for (const [cheatId, st] of Object.entries(profile.states)) {
-      try {
-        activeSession.toggleCheat(cheatId, st.enabled);
-      } catch {}
-    }
-    syncRemoteServerState();
-    mainWindow?.webContents.send('profile-applied', profile);
-    overlayWindow?.webContents.send('profile-applied', profile);
-  }
-  return profile;
-});
-
-ipcMain.handle('profiles:delete', async (_event, gameId, profileId) => {
-  return ProfileManager.deleteProfile(gameId, profileId);
-});
-
-
-// ==============================================================================
-// In-App Auto-Update (Download & Silent Install)
-// ==============================================================================
-let downloadedInstallerPath = '';
-
-ipcMain.handle('updater:download-update', async (_event, downloadUrl: string, fileName?: string) => {
-  const safeName = fileName || 'OpenTrainerEngine-Update.exe';
-  const tempDir = path.join(app.getPath('temp'), 'OpenTrainerEngineUpdates');
-  downloadedInstallerPath = path.join(tempDir, safeName);
-
-  try {
-    await AppUpdater.downloadUpdate(downloadUrl, downloadedInstallerPath, (prog) => {
-      mainWindow?.webContents.send('updater:progress', prog);
-    });
-    return { success: true, path: downloadedInstallerPath };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
-});
-
-ipcMain.handle('updater:install-and-restart', async (_event, silent: boolean = true) => {
-  if (!downloadedInstallerPath || !fs.existsSync(downloadedInstallerPath)) {
-    throw new Error('Nenhum instalador baixado para executar.');
-  }
-  AppUpdater.installAndRestart(downloadedInstallerPath, silent);
-  return { success: true };
-});
-
-
-// ==============================================================================
-// In-Game OSD & Overlay Controls (Auto-Pause & Screenshot & Toggle)
-// ==============================================================================
-ipcMain.handle('overlay:toggle', async () => {
-  if (!overlayWindow) return { visible: false };
-  if (overlayWindow.isVisible()) {
-    overlayWindow.hide();
-    return { visible: false };
-  } else {
-    overlayWindow.showInactive();
-    return { visible: true };
-  }
-});
-
-ipcMain.handle('game:toggle-pause', async () => {
-  if (!activeSession) {
-    return { isPaused: false, message: 'Nenhum jogo ativo.' };
-  }
-  const pid = (activeSession as any).processHandle?.pid || (activeSession as any).pid || null;
-  if (!pid) {
-    return { isPaused: false, message: 'PID do jogo não identificado.' };
-  }
-  const isPaused = GameProcessPauser.toggle(pid);
-  return { isPaused, pid };
-});
-
-ipcMain.handle('game:capture-screenshot', async () => {
-  const res = await GameScreenshotCapture.capturePrimaryScreen();
-  if (res.success) {
-    mainWindow?.webContents.send('screenshot-taken-event', res);
-    overlayWindow?.webContents.send('screenshot-taken-event', res);
-  }
-  return res;
-});
-
-// ==============================================================================
-// Extração de Ícone Nativo de Executável (.exe) & Resolução de Capas Reais
-// ==============================================================================
-ipcMain.handle('app:get-file-icon', async (_event, filePath: string) => {
-  try {
-    if (filePath && fs.existsSync(filePath)) {
-      const icon = await app.getFileIcon(filePath, { size: 'large' });
-      return icon.toDataURL();
-    }
-  } catch {}
-  return '';
-});
-
-ipcMain.handle('games:resolve-art', async (_event, game) => {
-  return GameArtResolver.resolveAndCacheArt(game);
 });

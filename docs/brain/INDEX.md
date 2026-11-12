@@ -11,8 +11,8 @@ Bem-vindo ao Segundo Cérebro do **Open Trainer Engine**. Esta base de conhecime
 ---
 
 ## 🚀 Versão Atual em Produção
-- **Versão:** `v0.6.0`
-- **Release no GitHub:** [v0.6.0 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.6.0)
+- **Versão:** `v0.6.1`
+- **Release no GitHub:** [v0.6.1 Releases](https://github.com/Henrique1601/open-trainer-engine/releases/tag/v0.6.1)
 - **Recursos & Fidelidade Visual da v0.6.0 (WeMod v10 / Wand Edition):**
   - **Fidelidade Visual 100% WeMod v10:** Topbar WAND, histórico de navegação `← →`, busca centralizada, menu popup de perfil ("Meu Perfil", "Ajuda ↗", "Conectar ao Steam", "Discord ↗", "Feedback", "Configurações") e botão dourado "TORNE-SE PRO".
   - **Sidebar Dinâmica Contextual:** Exibição contextual do jogo selecionado no topo com botão Play rápido e sub-abas (Personalizar, Mapa, Destaques, Sessões, Sugestões), além de lista completa de Favoritos e Meus Jogos (190) com ícones autênticos detectados.

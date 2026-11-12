@@ -4,12 +4,14 @@ import { EventEmitter } from 'node:events';
 
 export interface RemoteServerOptions {
   port?: number;
+  authToken?: string;
 }
 
 export class RemoteServer extends EventEmitter {
   private server: http.Server | null = null;
   private sseClients: http.ServerResponse[] = [];
   public readonly port: number;
+  public readonly authToken?: string;
 
   private currentGameState: {
     gameTitle: string | null;
@@ -32,6 +34,7 @@ export class RemoteServer extends EventEmitter {
   constructor(options: RemoteServerOptions = {}) {
     super();
     this.port = options.port || 38474;
+    this.authToken = options.authToken;
   }
 
   /**
@@ -53,7 +56,8 @@ export class RemoteServer extends EventEmitter {
 
   public getRemoteUrl(): string {
     const ip = RemoteServer.getLocalIpAddress();
-    return `http://${ip}:${this.port}`;
+    const base = `http://${ip}:${this.port}`;
+    return this.authToken ? `${base}/?token=${encodeURIComponent(this.authToken)}` : base;
   }
 
   public getQrCodeUrl(): string {
@@ -93,7 +97,7 @@ export class RemoteServer extends EventEmitter {
         // Headers CORS para PWA
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Remote-Token');
 
         if (req.method === 'OPTIONS') {
           res.writeHead(204);
@@ -102,6 +106,15 @@ export class RemoteServer extends EventEmitter {
         }
 
         const url = new URL(req.url || '/', `http://${req.headers.host}`);
+
+        if (this.authToken) {
+          const reqToken = url.searchParams.get('token') || req.headers['x-remote-token'];
+          if (reqToken !== this.authToken) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Token remoto inválido ou ausente' }));
+            return;
+          }
+        }
 
         // 1. Rota de Estado Atual
         if (url.pathname === '/api/status' && req.method === 'GET') {
@@ -263,14 +276,16 @@ export class RemoteServer extends EventEmitter {
       \`).join('');
     }
 
+    const remoteToken = new URLSearchParams(window.location.search).get('token') || '';
+
     async function toggleCheat(id) {
       if (window.navigator && window.navigator.vibrate) {
         window.navigator.vibrate(40);
       }
       try {
-        await fetch('/api/toggle', {
+        await fetch('/api/toggle' + (remoteToken ? '?token=' + encodeURIComponent(remoteToken) : ''), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(remoteToken ? { 'X-Remote-Token': remoteToken } : {}) },
           body: JSON.stringify({ cheatId: id })
         });
       } catch (e) {
@@ -279,7 +294,7 @@ export class RemoteServer extends EventEmitter {
     }
 
     function connectSSE() {
-      const evt = new EventSource('/api/events');
+      const evt = new EventSource('/api/events' + (remoteToken ? '?token=' + encodeURIComponent(remoteToken) : ''));
       evt.onopen = () => {
         netBadge.className = 'badge online';
         netBadge.textContent = 'Conectado';

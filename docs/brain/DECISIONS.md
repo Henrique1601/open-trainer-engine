@@ -52,3 +52,12 @@
   6. Tela Biblioteca em modo tabela/lista com ícone, título, favoritos, gêneros e ícones das plataformas Steam/Epic.
   7. Tela de Detalhes do Jogo espelhando Assassin's Creed Origins: hero com arte imersiva, poster vertical, chips de filtro (Todos, Assistir, Facilitar, Sandbox, Novo Pro), cheats com segmented toggles `[ Off | On ]` e keycaps 3D, e coluna lateral com widget do Mapa e player de vídeo companion.
 - **Consequência:** Experiência visual idêntica à aplicação oficial WeMod v10 / Wand, com todos os cliques, atalhos e integrações nativas funcionando perfeitamente.
+
+## ADR-009: Modularização IPC, Blindagem XSS/URLs, Token Remoto e UI Real (v0.6.1)
+- **Contexto:** A revisão de código e arquitetura da v0.6.0 identificou concentração excessiva de handlers IPC em `src/desktop/main.ts` (645 linhas), interpolação não sanitizada em `innerHTML` e handlers inline no frontend, ausência de validação de esquema em `open-external-url` / `updater:download-update`, servidor remoto sem autenticação por sessão, atalho global `F11` conflitando com fullscreen do SO e duplicação de geradores UI (`generate-wemod-v10-ui.cjs`).
+- **Decisão:**
+  - Dividir os handlers IPC em módulos de domínio (`src/desktop/ipc/ipc-library.ts`, `ipc-trainer.ts`, `ipc-system.ts`).
+  - Validar URLs externas com `isAllowedExternalUrl` (somente `http:`/`https:`) e sanitizar nome de arquivo de update via `path.basename`.
+  - Gerar `remoteAuthToken` por sessão para `RemoteServer`, exigindo token em `/api/*` e propagando-o na PWA móvel.
+  - Remover `scripts/generate-wemod-v10-ui.cjs`, adicionar `escapeHtml`, `escapeJsArg` e `showToast` em `scripts/generate-premium-ui.cjs` e conectar favoritos, stats, perfis, remote QR, updater real e eventos `cheat-toggled-event`/`playtime-updated`.
+- **Consequência:** Código principal enxuto (~195 linhas em `main.ts`), superfície IPC segura contra XSS/protocol abuse/acesso LAN não autorizado e UI v0.6.1 100% conectada ao backend real.

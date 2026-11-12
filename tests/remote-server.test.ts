@@ -69,4 +69,25 @@ describe('RemoteServer (WeMod Remote)', () => {
     expect(res.status).toBe(200);
     expect(emittedId).toBe('inf-ammo');
   });
+
+  it('deve exigir authToken quando configurado (401 sem token, 200 com token)', async () => {
+    server = new RemoteServer({ port: 39994, authToken: 'secret123' });
+    await server.start();
+
+    expect(server.getRemoteUrl()).toContain('?token=secret123');
+
+    const resUnauthorized = await fetch('http://127.0.0.1:39994/api/status');
+    expect(resUnauthorized.status).toBe(401);
+
+    const resWrong = await fetch('http://127.0.0.1:39994/api/status?token=wrong');
+    expect(resWrong.status).toBe(401);
+
+    const resAuthorized = await fetch('http://127.0.0.1:39994/api/status?token=secret123');
+    expect(resAuthorized.status).toBe(200);
+
+    const resHeader = await fetch('http://127.0.0.1:39994/api/status', {
+      headers: { 'x-remote-token': 'secret123' }
+    });
+    expect(resHeader.status).toBe(200);
+  });
 });
