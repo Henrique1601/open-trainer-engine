@@ -61,3 +61,11 @@
   - Gerar `remoteAuthToken` por sessão para `RemoteServer`, exigindo token em `/api/*` e propagando-o na PWA móvel.
   - Remover `scripts/generate-wemod-v10-ui.cjs`, adicionar `escapeHtml`, `escapeJsArg` e `showToast` em `scripts/generate-premium-ui.cjs` e conectar favoritos, stats, perfis, remote QR, updater real e eventos `cheat-toggled-event`/`playtime-updated`.
 - **Consequência:** Código principal enxuto (~195 linhas em `main.ts`), superfície IPC segura contra XSS/protocol abuse/acesso LAN não autorizado e UI v0.6.1 100% conectada ao backend real.
+
+## ADR-010: Trainer Studio na UI, Hotkeys Persistentes e Sub-abas Completas (v0.7.0)
+- **Contexto:** O backend já possuía `MemoryScannerStudio`, `HexViewer` e `CheatEngineTableImporter`, mas faltava expor o fluxo completo na UI e persistir os atalhos rebindados entre sessões.
+- **Decisão:**
+  - Expor `studio:scan-first`, `studio:scan-next`, `studio:scan-write` e `studio:scan-clear` em `src/desktop/ipc/ipc-trainer.ts` conectados ao `MemoryScannerStudio` da sessão ativa.
+  - Adicionar `customHotkeys` em `PreferencesStore` e handler `hotkey:set`, aplicando atalhos salvos automaticamente em `trainer:get-cheats`.
+  - Transformar o modal `+ NOVO PRO` no **Trainer Studio** (3 abas: Criar Cheat, Memory Scanner ao Vivo, Hex & Disassembler) e implementar as sub-abas do jogo (`Sessões`, `Destaques`, `Sugestões` com importação `.CT`).
+- **Consequência:** Usuários podem descobrir endereços em tempo real, inspecionar hex/disassembly, importar tabelas `.CT`, criar/remover cheats customizados e rebindar hotkeys com persistência total. Release Windows `.exe` (NSIS + Portable) gerada automaticamente via GitHub Actions na tag `v0.7.0`.

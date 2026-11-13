@@ -25,4 +25,12 @@ describe('PreferencesStore', () => {
     expect(saved['god_mode'].enabled).toBe(true);
     expect(saved['god_mode'].value).toBe(100);
   });
+
+  it('deve persistir e remover atalhos customizados (hotkeys) por jogo', () => {
+    PreferencesStore.setCustomHotkey('test-game', 'god_mode', 'F9');
+    expect(PreferencesStore.getCustomHotkeys('test-game')['god_mode']).toBe('F9');
+
+    PreferencesStore.setCustomHotkey('test-game', 'god_mode', '');
+    expect(PreferencesStore.getCustomHotkeys('test-game')['god_mode']).toBeUndefined();
+  });
 });

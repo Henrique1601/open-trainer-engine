@@ -47,6 +47,11 @@ export class TrainerSession extends EventEmitter {
     return Array.from(this.activeCheatIds);
   }
 
+  public getMemoryContext(): { handle: number; memory: MemoryReaderWriter } | null {
+    if (this.processHandle === null || !this.memory) return null;
+    return { handle: this.processHandle, memory: this.memory };
+  }
+
   private transition(newState: TrainerLaunchState): void {
     const oldState = this.state;
     this.state = newState;

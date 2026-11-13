@@ -14,6 +14,7 @@ export interface GamePreferences {
   autoRestoreMods: boolean; // Se deve restaurar automaticamente os mods ao abrir o jogo
   theme?: string; // Tema visual: 'wemod' | 'cyberpunk' | 'obsidian' | 'crimson' | 'frost'
   customCheats?: Record<string, any[]>; // Cheats criados pelo usuário no próprio launcher
+  customHotkeys?: Record<string, Record<string, string>>; // Atalhos rebindados por jogo e cheat
 }
 
 export class PreferencesStore {
@@ -29,7 +30,8 @@ export class PreferencesStore {
     playtime: {},
     autoRestoreMods: true,
     theme: 'wemod',
-    customCheats: {}
+    customCheats: {},
+    customHotkeys: {}
   };
 
   private static initialized = false;
@@ -216,5 +218,33 @@ export class PreferencesStore {
     );
     this.save();
     return this.currentData.customCheats[gameId];
+  }
+
+  // ============================================================================
+  // Gerenciador de Atalhos (Hotkeys) Customizados
+  // ============================================================================
+  public static getCustomHotkeys(gameId: string): Record<string, string> {
+    this.ensureInitialized();
+    if (!this.currentData.customHotkeys) {
+      this.currentData.customHotkeys = {};
+    }
+    return this.currentData.customHotkeys[gameId] || {};
+  }
+
+  public static setCustomHotkey(gameId: string, cheatId: string, hotkey: string): Record<string, string> {
+    this.ensureInitialized();
+    if (!this.currentData.customHotkeys) {
+      this.currentData.customHotkeys = {};
+    }
+    if (!this.currentData.customHotkeys[gameId]) {
+      this.currentData.customHotkeys[gameId] = {};
+    }
+    if (hotkey) {
+      this.currentData.customHotkeys[gameId][cheatId] = hotkey;
+    } else {
+      delete this.currentData.customHotkeys[gameId][cheatId];
+    }
+    this.save();
+    return this.currentData.customHotkeys[gameId];
   }
 }

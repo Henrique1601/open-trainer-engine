@@ -2236,32 +2236,88 @@ function generateHtml() {
     </div>
   </div>
 
-  <!-- MODAL ADICIONAR CHEAT CUSTOMIZADO (+ NOVO PRO) -->
+  <!-- MODAL TRAINER STUDIO (+ NOVO PRO / SCANNER / HEX) -->
   <div class="wand-modal-backdrop" id="new-cheat-modal" onclick="if(event.target===this)closeNewCheatModal()">
-    <div class="wand-modal-card">
+    <div class="wand-modal-card" style="max-width: 680px; width: 92%;">
       <div class="modal-header">
-        <div class="modal-title">✨ Criar Cheat / Mod Customizado</div>
+        <div class="modal-title">🛠️ Trainer Studio & Criador de Cheats</div>
         <button class="modal-close-btn" onclick="closeNewCheatModal()">✕</button>
       </div>
-      <div class="modal-body">
+      <div style="display: flex; gap: 8px; padding: 0 24px 12px; border-bottom: 1px solid var(--border-subtle);">
+        <button class="cheat-cat-pill active" id="studio-tab-btn-create" onclick="switchStudioTab('create', this)">✨ Criar Cheat</button>
+        <button class="cheat-cat-pill" id="studio-tab-btn-scanner" onclick="switchStudioTab('scanner', this)">🔍 Memory Scanner</button>
+        <button class="cheat-cat-pill" id="studio-tab-btn-hex" onclick="switchStudioTab('hex', this)">🧬 Hex & Disasm</button>
+      </div>
+      <div class="modal-body" id="studio-pane-create">
         <div>
           <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">NOME DO CHEAT</label>
           <input type="text" id="modal-cheat-name" placeholder="Ex: Super Pulo 10x" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
         </div>
-        <div>
-          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CATEGORIA</label>
-          <select id="modal-cheat-category" style="width: 100%; padding: 8px 12px; background: #20232d; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
-            <option value="Jogador">Jogador</option>
-            <option value="Inventário">Inventário</option>
-            <option value="Estatísticas">Estatísticas</option>
-            <option value="Velocidade">Velocidade</option>
-          </select>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CATEGORIA</label>
+            <select id="modal-cheat-category" style="width: 100%; padding: 8px 12px; background: #20232d; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+              <option value="Jogador">Jogador</option>
+              <option value="Inventário">Inventário</option>
+              <option value="Estatísticas">Estatísticas</option>
+              <option value="Velocidade">Velocidade</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">TECLA DE ATALHO</label>
+            <input type="text" id="modal-cheat-hotkey" placeholder="Ex: F11" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+          </div>
         </div>
         <div>
-          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">TECLA DE ATALHO</label>
-          <input type="text" id="modal-cheat-hotkey" placeholder="Ex: F11" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">ENDEREÇO / AOB OPCIONAL (EX: 0x7FF... OU 89 45 FC)</label>
+          <input type="text" id="modal-cheat-address" placeholder="Opcional — endereço de memória ou assinatura AOB" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
         </div>
-        <button class="btn-giant-play-wemod" style="margin-top: 10px;" onclick="saveNewCheatFromModal()">Adicionar Mod</button>
+        <button class="btn-giant-play-wemod" style="margin-top: 10px;" onclick="saveNewCheatFromModal()">Adicionar Mod ao Jogo</button>
+      </div>
+
+      <div class="modal-body" id="studio-pane-scanner" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 130px; gap: 10px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">VALOR ALVO</label>
+            <input type="text" id="scanner-target-value" placeholder="Ex: 100" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">TIPO</label>
+            <select id="scanner-value-type" style="width: 100%; padding: 8px 12px; background: #20232d; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px;">
+              <option value="int32">Int32</option>
+              <option value="float">Float</option>
+              <option value="double">Double</option>
+              <option value="int64">Int64</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button class="btn-salvar-mods-pro" onclick="runStudioFirstScan()">🔍 First Scan</button>
+          <button class="search-btn-action" onclick="runStudioNextScan('ExactValue')">Exact</button>
+          <button class="search-btn-action" onclick="runStudioNextScan('IncreasedValue')">↑ Aumentou</button>
+          <button class="search-btn-action" onclick="runStudioNextScan('DecreasedValue')">↓ Diminuiu</button>
+          <button class="search-btn-action" onclick="runStudioNextScan('ChangedValue')">≠ Mudou</button>
+          <button class="search-btn-action" onclick="clearStudioScan()">Limpar</button>
+        </div>
+        <div id="scanner-status-text" style="font-size: 12px; color: var(--text-muted);">Aguardando scan...</div>
+        <div id="scanner-results-box" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px; background: rgba(0,0,0,0.25); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+          Nenhum resultado ainda.
+        </div>
+      </div>
+
+      <div class="modal-body" id="studio-pane-hex" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 160px; gap: 10px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">BYTES HEX</label>
+            <input type="text" id="hex-input-bytes" value="90 90 89 45 FC E8 10 00 00 00 C3" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">ENDEREÇO BASE</label>
+            <input type="text" id="hex-input-base" value="0x140001000" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+          </div>
+        </div>
+        <button class="btn-salvar-mods-pro" onclick="runStudioHexDump()">🧬 Inspecionar Hex & Disasm</button>
+        <pre id="hex-output-box" style="max-height: 220px; overflow: auto; background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a7f3d0; white-space: pre;">Clique em Inspecionar para decodificar os bytes.</pre>
       </div>
     </div>
   </div>
@@ -2936,16 +2992,20 @@ function generateHtml() {
                 '<button class="search-btn-action" onclick="stepSliderValue(\\'' + safeCheatId + '\\', -0.5)">-</button>' +
                 '<span id="val-' + safeDomId + '" style="font-weight: 800; font-size: 12px; color: var(--accent); min-width: 40px; text-align: center;">' + (c.value || 1.0) + 'x</span>' +
                 '<button class="search-btn-action" onclick="stepSliderValue(\\'' + safeCheatId + '\\', 0.5)">+</button>' +
-                '<div class="hotkey-badge-3d" onclick="startRebindHotkey(\\'' + safeCheatId + '\\', this)">' + hotkey + '</div>' +
+                '<div class="hotkey-badge-3d" id="hotkey-' + safeDomId + '" onclick="startRebindHotkey(\\'' + safeCheatId + '\\', this)">' + hotkey + '</div>' +
               '</div>' +
             '</div>';
           } else {
+            const deleteBtn = c.isCustom
+              ? '<button class="search-btn-action" style="padding: 2px 7px; font-size: 11px; color: #f87171;" onclick="deleteCustomCheat(\\'' + safeCheatId + '\\')" title="Remover Mod Customizado">✕</button>'
+              : '';
             html += '<div class="cheat-row-item">' +
               '<div class="cheat-name-wrap">' +
                 '<span class="cheat-icon-bolt">⚡</span>' +
                 '<span class="cheat-title-text">' + safeCheatName + '</span>' +
               '</div>' +
               '<div class="cheat-controls-wrap">' +
+                deleteBtn +
                 '<div class="wemod-toggle-pill ' + (isActive ? 'on' : 'off') + '" id="toggle-pill-' + safeDomId + '" onclick="toggleCheatAction(\\'' + safeCheatId + '\\')">' +
                   '<span class="toggle-segment off">Off</span>' +
                   '<span class="toggle-segment on">On</span>' +
@@ -3037,15 +3097,20 @@ function generateHtml() {
       if (e.ctrlKey && key !== 'CONTROL') key = 'Ctrl+' + key;
       if (e.altKey && key !== 'ALT') key = 'Alt+' + key;
 
-      const cheat = selectedGame?.cheats?.find(c => c.id === listeningHotkeyTargetCheatId);
+      const targetCheatId = listeningHotkeyTargetCheatId;
+      const cheat = selectedGame?.cheats?.find(c => c.id === targetCheatId);
       if (cheat) cheat.hotkey = key;
 
-      const el = document.getElementById('hotkey-' + listeningHotkeyTargetCheatId);
+      const el = document.getElementById('hotkey-' + targetCheatId);
       if (el) {
         el.classList.remove('listening');
         el.innerText = key;
       }
 
+      if (ipcRenderer && selectedGame) {
+        ipcRenderer.invoke('hotkey:set', selectedGame.id, targetCheatId, key === 'None' ? '' : key).catch(() => {});
+      }
+      showToast('Atalho atualizado: ' + key);
       SoundEngine.action();
       listeningHotkeyTargetCheatId = null;
     });
@@ -3140,14 +3205,90 @@ function generateHtml() {
       openInteractiveMapModal(selectedGame ? selectedGame.title : 'Jogo');
     }
 
-    function switchGameSubtab(tabName, el) {
+    async function switchGameSubtab(tabName, el) {
       SoundEngine.click();
       document.querySelectorAll('.subtab-link').forEach(l => l.classList.remove('active'));
       document.querySelectorAll('.sidebar-subnav-item').forEach(l => l.classList.remove('active'));
       if (el) el.classList.add('active');
 
-      if (tabName === 'mapa') {
+      const container = document.getElementById('game-cheats-container');
+      if (!selectedGame || !container) return;
+
+      if (tabName === 'mapa' || tabName === 'teletransportar') {
         openGameMapTab();
+        return;
+      }
+
+      if (tabName === 'personalizar') {
+        renderCheatsList(selectedGame.cheats || []);
+        return;
+      }
+
+      if (tabName === 'sessoes') {
+        let stats = { totalPlaytime: '0m', sessionsCount: 0, lastPlayed: null };
+        let captures = [];
+        if (ipcRenderer) {
+          try { stats = await ipcRenderer.invoke('get-game-stats', selectedGame.id); } catch {}
+          try { captures = await ipcRenderer.invoke('get-captures', selectedGame.id); } catch {}
+        }
+        const capsHtml = captures && captures.length > 0
+          ? captures.slice(0, 6).map(cap =>
+              '<div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px; font-size: 12px;">' +
+                '<div style="font-weight: 700; color: #fff;">📸 ' + escapeHtml(cap.name || cap.filename || 'Captura') + '</div>' +
+                '<div style="color: var(--text-dim); font-size: 11px; margin-top: 4px;">' + escapeHtml(cap.createdAt || '') + '</div>' +
+              '</div>'
+            ).join('')
+          : '<div style="color: var(--text-dim); font-size: 13px;">Nenhuma captura registrada ainda para este jogo. Use o botão Câmera ou Ctrl+Shift+F11!</div>';
+
+        container.innerHTML =
+          '<div class="cheats-group-box">' +
+            '<div class="cheat-group-header"><span>⏱️</span><span>Resumo de Sessões & Playtime</span></div>' +
+            '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 14px;">' +
+              '<div style="background: rgba(255,255,255,0.04); padding: 14px; border-radius: 8px;"><div style="font-size: 11px; color: var(--text-dim);">TEMPO COM MODS</div><div style="font-size: 20px; font-weight: 800; color: var(--accent);">' + escapeHtml(stats.totalPlaytime || '0m') + '</div></div>' +
+              '<div style="background: rgba(255,255,255,0.04); padding: 14px; border-radius: 8px;"><div style="font-size: 11px; color: var(--text-dim);">SESSÕES</div><div style="font-size: 20px; font-weight: 800;">' + (stats.sessionsCount || 0) + '</div></div>' +
+              '<div style="background: rgba(255,255,255,0.04); padding: 14px; border-radius: 8px;"><div style="font-size: 11px; color: var(--text-dim);">ÚLTIMO ACESSO</div><div style="font-size: 13px; font-weight: 700; margin-top: 4px;">' + (stats.lastPlayed ? escapeHtml(new Date(stats.lastPlayed).toLocaleDateString('pt-BR')) : 'Nunca') + '</div></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cheats-group-box" style="margin-top: 16px;">' +
+            '<div class="cheat-group-header"><span>📸</span><span>Capturas da Sessão</span><button class="search-btn-action" style="margin-left: auto;" onclick="toggleGameRecording()">Capturar Agora</button></div>' +
+            '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; padding: 14px;">' + capsHtml + '</div>' +
+          '</div>';
+        return;
+      }
+
+      if (tabName === 'destaques') {
+        const activeCount = (selectedGame.cheats || []).filter(c => c.active).length;
+        container.innerHTML =
+          '<div class="cheats-group-box">' +
+            '<div class="cheat-group-header"><span>🎬</span><span>Destaques & Presets Rápidos</span></div>' +
+            '<div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">' +
+              '<div style="font-size: 13px; color: var(--text-muted);">Mods ativos neste momento: <strong style="color: var(--accent);">' + activeCount + '</strong> de ' + (selectedGame.cheats || []).length + '</div>' +
+              '<div style="display: flex; gap: 10px; flex-wrap: wrap;">' +
+                '<button class="btn-salvar-mods-pro" onclick="saveCurrentGameModsPreset()">⭐ Salvar Mods Atuais como Perfil</button>' +
+                '<button class="search-btn-action" onclick="toggleOverlayHud()">🖥️ Alternar Overlay HUD In-Game</button>' +
+                '<button class="search-btn-action" onclick="openNewCheatModal(\\'scanner\\')">🔍 Abrir Memory Scanner Studio</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        return;
+      }
+
+      if (tabName === 'sugestoes') {
+        container.innerHTML =
+          '<div class="cheats-group-box">' +
+            '<div class="cheat-group-header"><span>💡</span><span>Importar Tabela Cheat Engine (.CT) & Criar Mods</span></div>' +
+            '<div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">' +
+              '<p style="font-size: 13px; color: var(--text-muted); margin: 0;">Importe um arquivo <code>.CT</code> do Cheat Engine para converter seus endereços automaticamente em mods nativos para <strong>' + escapeHtml(selectedGame.title) + '</strong>.</p>' +
+              '<div style="display: flex; gap: 10px; align-items: center;">' +
+                '<input type="file" id="ct-import-file" accept=".ct,.CT" style="flex: 1; font-size: 12px; color: var(--text-muted);">' +
+                '<button class="btn-salvar-mods-pro" onclick="importCtForGame()">📥 Importar .CT</button>' +
+              '</div>' +
+              '<div style="border-top: 1px solid var(--border-subtle); padding-top: 12px; display: flex; gap: 10px;">' +
+                '<button class="search-btn-action" onclick="openNewCheatModal(\\'create\\')">✨ Criar Cheat Manual</button>' +
+                '<button class="search-btn-action" onclick="openNewCheatModal(\\'hex\\')">🧬 Abrir Hex & Disassembler</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
       }
     }
 
@@ -3247,10 +3388,22 @@ function generateHtml() {
       }
     }
 
-    function openNewCheatModal() {
+    function openNewCheatModal(initialTab = 'create') {
       SoundEngine.click();
       const modal = document.getElementById('new-cheat-modal');
       if (modal) modal.classList.add('show');
+      const btn = document.getElementById('studio-tab-btn-' + initialTab);
+      switchStudioTab(initialTab, btn);
+    }
+
+    function switchStudioTab(tab, btnEl) {
+      ['create', 'scanner', 'hex'].forEach(t => {
+        const pane = document.getElementById('studio-pane-' + t);
+        if (pane) pane.style.display = t === tab ? 'flex' : 'none';
+        const btn = document.getElementById('studio-tab-btn-' + t);
+        if (btn) btn.classList.toggle('active', t === tab);
+      });
+      if (btnEl) btnEl.classList.add('active');
     }
 
     function closeNewCheatModal() {
@@ -3263,10 +3416,12 @@ function generateHtml() {
       const nameInput = document.getElementById('modal-cheat-name');
       const catInput = document.getElementById('modal-cheat-category');
       const hotkeyInput = document.getElementById('modal-cheat-hotkey');
+      const addrInput = document.getElementById('modal-cheat-address');
 
       const name = nameInput ? nameInput.value.trim() : '';
       const cat = catInput ? catInput.value : 'Jogador';
       const hotkey = hotkeyInput && hotkeyInput.value.trim() ? hotkeyInput.value.trim() : 'F11';
+      const address = addrInput ? addrInput.value.trim() : '';
 
       if (!name) {
         showToast('Por favor, informe o nome do cheat!');
@@ -3278,6 +3433,8 @@ function generateHtml() {
         name,
         category: cat,
         hotkey,
+        address: address || undefined,
+        isCustom: true,
         active: false
       };
 
@@ -3294,7 +3451,130 @@ function generateHtml() {
       SoundEngine.action();
       closeNewCheatModal();
       renderCheatsList(selectedGame.cheats);
+      showToast('Cheat customizado adicionado!');
       if (nameInput) nameInput.value = '';
+      if (addrInput) addrInput.value = '';
+    }
+
+    async function deleteCustomCheat(cheatId) {
+      if (!selectedGame) return;
+      SoundEngine.click();
+      selectedGame.cheats = (selectedGame.cheats || []).filter(c => c.id !== cheatId);
+      if (ipcRenderer) {
+        try {
+          await ipcRenderer.invoke('custom-cheats:delete', selectedGame.id, cheatId);
+        } catch {}
+      }
+      renderCheatsList(selectedGame.cheats);
+      showToast('Mod customizado removido.');
+    }
+
+    function renderStudioScanResults(res) {
+      const statusEl = document.getElementById('scanner-status-text');
+      const boxEl = document.getElementById('scanner-results-box');
+      if (!statusEl || !boxEl) return;
+
+      if (res.error) {
+        statusEl.innerText = '⚠️ ' + res.error;
+        boxEl.innerHTML = '<div style="color: #f87171;">' + escapeHtml(res.error) + '</div>';
+        return;
+      }
+
+      statusEl.innerText = 'Encontrados: ' + (res.count || 0) + ' endereço(s) (exibindo até 50)';
+      if (!res.results || res.results.length === 0) {
+        boxEl.innerHTML = '<div style="color: var(--text-dim);">Nenhum endereço compatível encontrado.</div>';
+        return;
+      }
+
+      boxEl.innerHTML = res.results.map(r => {
+        const safeAddr = escapeJsArg(r.address);
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">' +
+          '<span><strong style="color:var(--accent);">' + escapeHtml(r.address) + '</strong> = ' + escapeHtml(r.currentValue) + '</span>' +
+          '<div style="display:flex;gap:6px;">' +
+            '<button class="search-btn-action" style="padding:2px 8px;font-size:11px;" onclick="writeStudioAddressValue(\\'' + safeAddr + '\\')">Editar</button>' +
+            '<button class="search-btn-action" style="padding:2px 8px;font-size:11px;" onclick="promoteScanToCheat(\\'' + safeAddr + '\\')">+ Cheat</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function runStudioFirstScan() {
+      if (!ipcRenderer) return;
+      const val = document.getElementById('scanner-target-value')?.value?.trim();
+      const type = document.getElementById('scanner-value-type')?.value || 'int32';
+      if (!val) { showToast('Informe um valor para escanear.'); return; }
+      const res = await ipcRenderer.invoke('studio:scan-first', val, type);
+      renderStudioScanResults(res);
+    }
+
+    async function runStudioNextScan(comparison) {
+      if (!ipcRenderer) return;
+      const val = document.getElementById('scanner-target-value')?.value?.trim();
+      const type = document.getElementById('scanner-value-type')?.value || 'int32';
+      const res = await ipcRenderer.invoke('studio:scan-next', comparison, val, type);
+      renderStudioScanResults(res);
+    }
+
+    async function writeStudioAddressValue(addressHex) {
+      if (!ipcRenderer) return;
+      const val = document.getElementById('scanner-target-value')?.value?.trim();
+      const type = document.getElementById('scanner-value-type')?.value || 'int32';
+      if (!val) { showToast('Digite o novo valor no campo Valor Alvo.'); return; }
+      const res = await ipcRenderer.invoke('studio:scan-write', addressHex, val, type);
+      showToast(res && res.success ? 'Valor escrito em ' + addressHex : 'Falha ao escrever na memória.');
+    }
+
+    function promoteScanToCheat(addressHex) {
+      const addrInput = document.getElementById('modal-cheat-address');
+      if (addrInput) addrInput.value = addressHex;
+      switchStudioTab('create', document.getElementById('studio-tab-btn-create'));
+      showToast('Endereço copiado para o Criador de Cheats!');
+    }
+
+    async function clearStudioScan() {
+      if (ipcRenderer) await ipcRenderer.invoke('studio:scan-clear');
+      const statusEl = document.getElementById('scanner-status-text');
+      const boxEl = document.getElementById('scanner-results-box');
+      if (statusEl) statusEl.innerText = 'Scan limpo.';
+      if (boxEl) boxEl.innerText = 'Nenhum resultado.';
+    }
+
+    async function runStudioHexDump() {
+      if (!ipcRenderer) return;
+      const bytes = document.getElementById('hex-input-bytes')?.value || '';
+      const base = document.getElementById('hex-input-base')?.value || '0x0';
+      const outEl = document.getElementById('hex-output-box');
+      try {
+        const res = await ipcRenderer.invoke('studio:hex-dump', bytes, base);
+        const dumpLines = (res.dump || []).map(r => r.addressHex + ' | ' + r.bytesHex.join(' ') + ' | ' + r.ascii);
+        const disasmLines = (res.disasm || []).map(d => '+' + d.offset.toString(16).padStart(2, '0') + '  ' + d.opcode.padEnd(14, ' ') + ' ' + d.mnemonic);
+        if (outEl) outEl.textContent = '=== HEX DUMP ===\\n' + dumpLines.join('\\n') + '\\n\\n=== DISASSEMBLY x86/x64 ===\\n' + disasmLines.join('\\n');
+      } catch (e) {
+        if (outEl) outEl.textContent = 'Erro ao decodificar hex: ' + e.message;
+      }
+    }
+
+    async function importCtForGame() {
+      const fileInput = document.getElementById('ct-import-file');
+      const file = fileInput && fileInput.files && fileInput.files[0];
+      if (!file || !file.path) {
+        showToast('Selecione um arquivo .CT válido.');
+        return;
+      }
+      if (!ipcRenderer || !selectedGame) return;
+      try {
+        const contract = await ipcRenderer.invoke('import-ct', file.path, selectedGame.processName || selectedGame.title);
+        const importedCheats = (contract && contract.cheats) || [];
+        for (const c of importedCheats) {
+          c.isCustom = true;
+          await ipcRenderer.invoke('custom-cheats:add', selectedGame.id, c);
+        }
+        selectedGame.cheats = [...(selectedGame.cheats || []), ...importedCheats];
+        showToast('Importados ' + importedCheats.length + ' cheats do arquivo .CT!');
+        switchGameSubtab('personalizar', document.querySelector('.sidebar-subnav-item'));
+      } catch (e) {
+        showToast('Erro ao importar .CT: ' + e.message);
+      }
     }
 
     function toggleOverlayHud() {

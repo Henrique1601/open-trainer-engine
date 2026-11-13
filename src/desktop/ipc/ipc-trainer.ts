@@ -12,6 +12,7 @@ import { SpeedhackEngine } from '../../core/memory/speedhack.js';
 import { GameProcessPauser } from '../../core/memory/process-pauser.js';
 import { AntiCheatDetector } from '../../core/security/anti-cheat-detector.js';
 import { HexViewer } from '../../core/studio/hex-viewer.js';
+import { MemoryScannerStudio, ScanComparisonType } from '../../core/studio/memory-scanner-studio.js';
 
 export interface TrainerIpcDeps {
   getMainWindow: () => BrowserWindow | null;
@@ -26,7 +27,10 @@ export interface TrainerIpcDeps {
 }
 
 export function registerTrainerIpc(deps: TrainerIpcDeps): void {
+  let activeScanner: MemoryScannerStudio | null = null;
+
   ipcMain.handle('attach-trainer', async (_event, contract) => {
+    activeScanner = null;
     deps.cleanupSession();
 
     try {
@@ -96,6 +100,7 @@ export function registerTrainerIpc(deps: TrainerIpcDeps): void {
   });
 
   ipcMain.handle('detach-trainer', async () => {
+    activeScanner = null;
     deps.cleanupSession();
     return { success: true };
   });
@@ -148,14 +153,25 @@ export function registerTrainerIpc(deps: TrainerIpcDeps): void {
     }
 
     const customCheats = PreferencesStore.getCustomCheats(gameId);
+    const customHotkeys = PreferencesStore.getCustomHotkeys(gameId);
     const cheatMap = new Map<string, any>();
-    for (const c of defaults) cheatMap.set(c.id, c);
+    for (const c of defaults) cheatMap.set(c.id, { ...c });
     if (staticTrainer) {
-      for (const c of staticTrainer.cheats) cheatMap.set(c.id, c);
+      for (const c of staticTrainer.cheats) cheatMap.set(c.id, { ...c });
     }
-    for (const c of customCheats) cheatMap.set(c.id, c);
+    for (const c of customCheats) cheatMap.set(c.id, { ...c, isCustom: true });
+
+    for (const [cId, hotkey] of Object.entries(customHotkeys)) {
+      const item = cheatMap.get(cId);
+      if (item) item.hotkey = hotkey;
+    }
 
     return Array.from(cheatMap.values());
+  });
+
+  ipcMain.handle('hotkey:set', async (_event, gameId: string, cheatId: string, hotkey: string) => {
+    const updated = PreferencesStore.setCustomHotkey(gameId, cheatId, hotkey);
+    return { success: true, hotkeys: updated };
   });
 
   ipcMain.handle('custom-cheats:get', async (_event, gameId: string) => {
@@ -214,6 +230,67 @@ export function registerTrainerIpc(deps: TrainerIpcDeps): void {
       dump: HexViewer.formatHexDump(buf, baseAddr),
       disasm: HexViewer.disassembleQuick(buf)
     };
+  });
+
+  ipcMain.handle('studio:scan-first', async (_event, targetValue: string | number, valueType: any = 'int32') => {
+    const ctx = deps.getActiveSession()?.getMemoryContext();
+    if (!ctx) {
+      return {
+        success: false,
+        count: 0,
+        results: [],
+        error: 'Nenhum processo em execução acoplado. Clique em Jogar no jogo aberto antes de escanear.'
+      };
+    }
+    activeScanner = new MemoryScannerStudio(ctx.handle, ctx.memory);
+    const parsedVal = valueType === 'int64' ? BigInt(targetValue) : Number(targetValue);
+    const count = activeScanner.firstScan(parsedVal, valueType);
+    const results = activeScanner.getResults(50).map(r => ({
+      address: '0x' + r.address.toString(16).toUpperCase(),
+      previousValue: String(r.previousValue),
+      currentValue: String(r.currentValue)
+    }));
+    return { success: true, count, results };
+  });
+
+  ipcMain.handle('studio:scan-next', async (_event, comparison: ScanComparisonType, targetValue?: string | number, valueType: any = 'int32') => {
+    if (!activeScanner) {
+      return { success: false, count: 0, results: [], error: 'Execute um First Scan antes.' };
+    }
+    const parsedVal = targetValue !== undefined && targetValue !== ''
+      ? (valueType === 'int64' ? BigInt(targetValue) : Number(targetValue))
+      : undefined;
+    const count = activeScanner.nextScan(comparison, parsedVal, valueType);
+    const results = activeScanner.getResults(50).map(r => ({
+      address: '0x' + r.address.toString(16).toUpperCase(),
+      previousValue: String(r.previousValue),
+      currentValue: String(r.currentValue)
+    }));
+    return { success: true, count, results };
+  });
+
+  ipcMain.handle('studio:scan-write', async (_event, addressHex: string, value: string | number, valueType: string = 'int32') => {
+    const ctx = deps.getActiveSession()?.getMemoryContext();
+    if (!ctx) {
+      return { success: false, error: 'Nenhum processo acoplado.' };
+    }
+    const addr = BigInt(addressHex);
+    let ok = false;
+    switch (valueType) {
+      case 'float': ok = ctx.memory.writeFloat(addr, Number(value)); break;
+      case 'double': ok = ctx.memory.writeDouble(addr, Number(value)); break;
+      case 'int64': ok = ctx.memory.writeInt64(addr, BigInt(value)); break;
+      case 'int16': ok = ctx.memory.writeInt16(addr, Number(value)); break;
+      case 'int8': ok = ctx.memory.writeInt8(addr, Number(value)); break;
+      default: ok = ctx.memory.writeInt32(addr, Number(value)); break;
+    }
+    return { success: ok };
+  });
+
+  ipcMain.handle('studio:scan-clear', async () => {
+    activeScanner?.clear();
+    activeScanner = null;
+    return { success: true };
   });
 
   ipcMain.handle('game:toggle-pause', async () => {
